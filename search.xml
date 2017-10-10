@@ -3,6 +3,40 @@
   
     
     <entry>
+      <title><![CDATA[Zval中的refcount问题]]></title>
+      <url>/2017/10/10/zval-refcount/</url>
+      <content type="html"><![CDATA[<p>今天群里面的一位小伙伴问我关于PHP变量中refcount的问题，当时回答给他了，发现自己没注意到一个细节，记录下来。</p>
+<a id="more"></a>
+<h2 id="什么是refcount"><a href="#什么是refcount" class="headerlink" title="什么是refcount"></a>什么是refcount</h2><p>“zval结构体中有四个字段，其含义分别为：</p>
+<p>属性名    含义    默认值<br>refcount<strong>gc    表示引用计数    1<br>is_ref</strong>gc    表示是否为引用    0<br>value    存储变量的值<br>type    变量具体的类型”</p>
+<p>摘录来自: Reeze Xia. “TIPI: 深入理解PHP内核”。</p>
+<p>refcount是php用来对zval变量引用次数技术的一个变量值。</p>
+<p>它是一个计数器，用来保存有多少符号表有多少符号指向该zval。在变量生成时，其refcount=1，赋值操作$a = $b会令zval的refcount加1，zval的refcount如果减少到0，会释放该zval所占的内存空间。</p>
+<p>##问题是什么？<br>小伙伴原问题是为什么下面的计数会是3.<br><img src="/2017/10/10/zval-refcount/1704455592.jpg" alt="E0B61238BF90638ECF0A713DC1169A3D.jpg"></p>
+<p>因为照上面的说法zval $a在被赋值为100的时候应该为1，$b = $a 的时候应该再加1，那么debug_zval_dump()函数照理来说应该显示2，而不应该显示3。</p>
+<p>当时我的回答是，初始化的时候值为1，赋值的时候再加1，赋值给$b的时候再加1，所以是3。<br>但是后来他提出，使用xdebug_zval_dump()出来refcount的值是2。<br>那么，我之前的答案就是错的，惭愧，学艺不精。</p>
+<p>于是我找了一些资料来研究两个函数之间处理的差异。</p>
+<p>下面就是差异的原因。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">PHP<span class="string">'s debug_zval_dump takes a variable as argument for analysis and is thus also bound to the same splitting rules as outlined earlier. This means that'</span>s not really well suited <span class="keyword">for</span> dumping a zval<span class="string">'s internal structure as it would always modify the zval. Besides adding 1 to the refcount field, it could also force a split resulting in unexpected output:</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">&lt;?php</span></div><div class="line"><span class="string">$a = 42;</span></div><div class="line"><span class="string">debug_zval_dump($a);</span></div><div class="line"><span class="string">?&gt;</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">shows:</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">long(42) refcount(2)</span></div><div class="line"><span class="string"></span></div><div class="line"><span class="string">Xdebug has a similar function to display a zval'</span>s internal data: xdebug_debug_zval. This <span class="function"><span class="keyword">function</span> <span class="title">does</span> <span class="title">requires</span> <span class="title">not</span> <span class="title">a</span> <span class="title">variable</span> <span class="title">to</span> <span class="title">be</span> <span class="title">passed</span> <span class="title">as</span> <span class="title">its</span> <span class="title">argument</span>, <span class="title">but</span> <span class="title">instead</span> <span class="title">requires</span> <span class="title">a</span> <span class="title">variable</span> <span class="title">name</span> <span class="title">to</span> <span class="title">be</span> <span class="title">passed</span> <span class="title">in</span>. <span class="title">With</span> <span class="title">this</span>, <span class="title">the</span> <span class="title">manipulation</span> <span class="title">of</span> <span class="title">the</span> <span class="title">zval</span> <span class="title">is</span> <span class="title">avoided</span> <span class="title">and</span> <span class="title">the</span> <span class="title">proper</span> <span class="title">values</span> <span class="title">are</span> <span class="title">shown</span>:</span></div><div class="line"><span class="function"></span></div><div class="line"><span class="function">&lt;?<span class="title">php</span></span></div><div class="line">$a = 42;</div><div class="line">xdebug_debug_zval(<span class="string">'a'</span>);</div><div class="line"><span class="meta">?&gt;</span></div><div class="line"></div><div class="line">which shows:</div><div class="line"></div><div class="line">a: (refcount=<span class="number">1</span>, is_ref=<span class="number">0</span>)=<span class="number">42</span></div></pre></td></tr></table></figure>
+<p>所以单纯的<code>$a</code>的refcount＝0,赋值操作会+1。</p>
+]]></content>
+      
+        <categories>
+            
+            <category> PHP </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[PHP自动文件扩展安全研究]]></title>
       <url>/2017/10/10/PHP%E8%87%AA%E5%8A%A8%E6%96%87%E4%BB%B6%E6%89%A9%E5%B1%95%E5%AE%89%E5%85%A8%E7%A0%94%E7%A9%B6/</url>
       <content type="html"><![CDATA[<p>今天在看TIPI的时候读到了$PHP_SRC/main/php_globals.h里面全局变量宏中全局变量是通过php.ini来加载赋值的。<br>里面有两个值[图1]<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">char</span> *auto_append_file;</div><div class="line"><span class="keyword">char</span> *auto_prepend_file;</div></pre></td></tr></table></figure></p>
@@ -32,6 +66,20 @@
 <p>包含以上的是可以getshell的，当前（目录下的任意文件可以命令执行）</p>
 ]]></content>
       
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+            <tag> Backdoor </tag>
+            
+        </tags>
         
     </entry>
     
