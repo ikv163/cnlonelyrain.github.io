@@ -10,6 +10,7 @@
 <p>##漏洞分析正文</p>
 <p>这次披露的是ImageMagick的一个命令执行漏洞。首先定位到最终漏洞代码执行的地方,老外给出的poc是在一个文件内填充以下字符命名为<code>.mvg</code>格式</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">push graphic-context</div><div class="line">viewbox 0 0 640 480</div><div class="line">fill &apos;url(https://example.com/image.jpg&quot;ls &quot;-la)&apos;</div><div class="line">pop graphic-context</div></pre></td></tr></table></figure>
+<a id="more"></a>
 <p>我以POC为一个切入点,分析POC的执行过程。</p>
 <p><img src="/2017/10/10/Imagetragick/351343864.png" alt="imagetragic_2.png"><br>首先从入口函数CovertMain()开始,在第81行MagickCommandGenesis()的第二个参数传入了ConvertImageCommand这个变量,这个变量是一个函数指针,指向了ConvertImageCommand()的函数首地址。所以MagickCommandGenesis()实现了函数的动态调用(非常好的写法)。</p>
 <p>文件:wand/delegate.c:417行</p>
