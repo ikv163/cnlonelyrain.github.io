@@ -6,7 +6,7 @@
   <meta http-equiv="cache-control" content="no-cache">
   <meta http-equiv="expires" content="0">
   
-  <title>Página 2 | \\LonelyRain.me\BLOG</title>
+  <title>Page 2 | \\LonelyRain.me\BLOG</title>
   <meta name="author" content="LonelyRain">
   
   
@@ -132,6 +132,44 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
+			<a href="/2017/10/10/WordPress-Vul-1/" >WordPress &lt;= 2.0.2 - (cache) 代码注入分析</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2017-10-10  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h1 id="WordPress-lt-2-0-2-cache-Remote-Shell-Injection-Exploit"><a href="#WordPress-lt-2-0-2-cache-Remote-Shell-Injection-Exploit" class="headerlink" title="WordPress &lt;= 2.0.2 - (cache) Remote Shell Injection Exploit"></a>WordPress &lt;= 2.0.2 - (cache) Remote Shell Injection Exploit</h1><ul>
+<li>影响条件:</li>
+<li>程序:WordPress</li>
+<li>版本:&lt;= 2.0.2</li>
+<li>严重程度:高危</li>
+</ul>
+<h2 id="简要"><a href="#简要" class="headerlink" title="简要"></a>简要</h2><p>这个漏洞问题出在WordPress生成的序列化后的缓存文件中.因为缓存文件的后缀为<code>php</code>,文件的内容可控,并且文件名在一定条件下可预见,所以在一定条件下可以getshell</p>
+<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><p>首先下断点在生成问题文件的地方</p>
+<p><strong>程序流程图</strong></p>
+<p><img src="/2017/10/10/WordPress-Vul-1/383653936.png" alt="1.png"></p>
+<p>出问题的是<br>wp-includes/cache.php<br>文件中的save()函数</p>
+<p>save()函数序列化了用户的资料之后再保存到</p>
+	
+	</div>
+  <a type="button" href="/2017/10/10/WordPress-Vul-1/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
 			<a href="/2017/10/10/PHP-Type/" >从PHP源代码学习PHP--PHP类型</a>
 		</h3>
 		</div>
@@ -153,7 +191,7 @@ var _hmt = _hmt || [];
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">zval_struct</span> <span class="title">zval</span>;</span></div><div class="line"></div><div class="line"><span class="keyword">typedef</span> <span class="keyword">union</span> _zvalue_value &#123;</div><div class="line"><span class="keyword">long</span> lval;                    <span class="comment">/* long value */</span></div><div class="line"><span class="keyword">double</span> dval;                <span class="comment">/* double value */</span></div><div class="line"><span class="class"><span class="keyword">struct</span> &#123;</span></div><div class="line"><span class="keyword">char</span> *val;</div><div class="line"><span class="keyword">int</span> len;</div><div class="line">&#125; str;</div><div class="line">HashTable *ht;                <span class="comment">/* hash table value */</span></div><div class="line">zend_object_value obj;</div><div class="line">zend_ast *ast;</div><div class="line">&#125; zvalue_value;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">zval_struct</span> &#123;</span></div><div class="line"><span class="comment">/* Variable information */</span></div><div class="line">zvalue_value value;        <span class="comment">/* value */</span></div><div class="line">zend_uint refcount__gc;   <span class="comment">/* PHP的内存回收机制需要这个值,现在我们并不需要对它特别关注 */</span></div><div class="line">zend_uchar type;    <span class="comment">/* active type */</span></div><div class="line">zend_uchar is_ref__gc;</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
 	
 	</div>
-  <a type="button" href="/2017/10/10/PHP-Type/#more" class="btn btn-default more">Leia Mais</a>
+  <a type="button" href="/2017/10/10/PHP-Type/#more" class="btn btn-default more">Read More</a>
 </div>
 
 		
@@ -184,7 +222,7 @@ var _hmt = _hmt || [];
 <p>那么搜索一下调用<code>system()</code>函数有哪些地方?经过搜索的话,最终只有CVE-2016-3714这个漏洞点调用到了一个<code>system()</code>. 那这么接下来搜索一下<code>popen()</code>函数调用点</p>
 	
 	</div>
-  <a type="button" href="/2017/10/10/ImageMagick2/#more" class="btn btn-default more">Leia Mais</a>
+  <a type="button" href="/2017/10/10/ImageMagick2/#more" class="btn btn-default more">Read More</a>
 </div>
 
 		
@@ -215,7 +253,7 @@ var _hmt = _hmt || [];
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">push graphic-context</div><div class="line">viewbox 0 0 640 480</div><div class="line">fill &apos;url(https://example.com/image.jpg&quot;ls &quot;-la)&apos;</div><div class="line">pop graphic-context</div></pre></td></tr></table></figure>
 	
 	</div>
-  <a type="button" href="/2017/10/10/Imagetragick/#more" class="btn btn-default more">Leia Mais</a>
+  <a type="button" href="/2017/10/10/Imagetragick/#more" class="btn btn-default more">Read More</a>
 </div>
 
 		
@@ -244,7 +282,7 @@ var _hmt = _hmt || [];
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">--- src/http/ngx_http_parse.c</div><div class="line">+++ src/http/ngx_http_parse.c</div><div class="line">@@ <span class="number">-617</span>,<span class="number">6</span> +<span class="number">617</span>,<span class="number">7</span> @@ ngx_http_parse_request_line(ngx_http_req</div><div class="line"><span class="keyword">default</span>:</div><div class="line">r-&gt;space_in_uri = <span class="number">1</span>;</div><div class="line">state = sw_check_uri;</div><div class="line">+                p--;</div><div class="line"><span class="keyword">break</span>;</div><div class="line">&#125;</div><div class="line"><span class="keyword">break</span>;</div><div class="line">@@ <span class="number">-670</span>,<span class="number">6</span> +<span class="number">671</span>,<span class="number">7</span> @@ ngx_http_parse_request_line(ngx_http_req</div><div class="line"><span class="keyword">default</span>:</div><div class="line">r-&gt;space_in_uri = <span class="number">1</span>;</div><div class="line">state = sw_uri;</div><div class="line">+                p--;</div><div class="line"><span class="keyword">break</span>;</div><div class="line">&#125;</div><div class="line"><span class="keyword">break</span>;</div></pre></td></tr></table></figure>
 	
 	</div>
-  <a type="button" href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/#more" class="btn btn-default more">Leia Mais</a>
+  <a type="button" href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/#more" class="btn btn-default more">Read More</a>
 </div>
 
 		
@@ -273,7 +311,7 @@ var _hmt = _hmt || [];
 
 	
 	</div>
-  <a type="button" href="/2017/10/10/新博客-新旅程/#more" class="btn btn-default more">Leia Mais</a>
+  <a type="button" href="/2017/10/10/新博客-新旅程/#more" class="btn btn-default more">Read More</a>
 </div>
 
 		
@@ -287,12 +325,12 @@ var _hmt = _hmt || [];
 
    
     
-     <a href="/" type="button" class="btn btn-default"><i class="fa fa-arrow-circle-o-left"></i> Anterior</a>
+     <a href="/" type="button" class="btn btn-default"><i class="fa fa-arrow-circle-o-left"></i> Prev</a>
       
 
         <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
  
-          <a type="button" class="btn btn-default disabled">Próximo<i class="fa fa-arrow-circle-o-right"></i></a>
+          <a type="button" class="btn btn-default disabled">Next<i class="fa fa-arrow-circle-o-right"></i></a>
         
 
   
@@ -312,7 +350,7 @@ var _hmt = _hmt || [];
 			
   <div id="site_search">
    <div class="form-group">
-    <input type="text" id="local-search-input" name="q" results="0" placeholder="Busca" class="st-search-input st-default-search-input form-control"/>
+    <input type="text" id="local-search-input" name="q" results="0" placeholder="Search" class="st-search-input st-default-search-input form-control"/>
    </div>  
   <div id="local-search-result"></div>
   </div>
@@ -321,10 +359,10 @@ var _hmt = _hmt || [];
 		
 			
 	<div class="widget">
-		<h4>Categorias</h4>
+		<h4>Categories</h4>
 		<ul class="tag_box inline list-unstyled">
 		
-			<li><a href="/categories/PHP/">PHP<span>1</span></a></li>
+			<li><a href="/categories/PHP/">PHP<span>2</span></a></li>
 		
 			<li><a href="/categories/essay/">essay<span>1</span></a></li>
 		
@@ -341,35 +379,35 @@ var _hmt = _hmt || [];
 		<h4>Tag Cloud</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/命令执行/">命令执行<span>2</span></a></li>
-		
-			<li><a href="/tags/漏洞分析/">漏洞分析<span>11</span></a></li>
+			<li><a href="/tags/Nginx/">Nginx<span>1</span></a></li>
 		
 			<li><a href="/tags/伪随机数/">伪随机数<span>2</span></a></li>
 		
-			<li><a href="/tags/代码注入/">代码注入<span>4</span></a></li>
+			<li><a href="/tags/WordPress/">WordPress<span>4</span></a></li>
 		
 			<li><a href="/tags/源码分析/">源码分析<span>1</span></a></li>
 		
-			<li><a href="/tags/WordPress/">WordPress<span>4</span></a></li>
-		
-			<li><a href="/tags/Backdoor/">Backdoor<span>1</span></a></li>
+			<li><a href="/tags/代码注入/">代码注入<span>4</span></a></li>
 		
 			<li><a href="/tags/解析漏洞/">解析漏洞<span>1</span></a></li>
 		
-			<li><a href="/tags/Curl/">Curl<span>1</span></a></li>
+			<li><a href="/tags/essay/">essay<span>1</span></a></li>
 		
-			<li><a href="/tags/PHP/">PHP<span>10</span></a></li>
+			<li><a href="/tags/PHP/">PHP<span>11</span></a></li>
 		
-			<li><a href="/tags/注入/">注入<span>1</span></a></li>
+			<li><a href="/tags/Backdoor/">Backdoor<span>1</span></a></li>
+		
+			<li><a href="/tags/漏洞分析/">漏洞分析<span>11</span></a></li>
+		
+			<li><a href="/tags/命令执行/">命令执行<span>2</span></a></li>
 		
 			<li><a href="/tags/CodeIgniter/">CodeIgniter<span>2</span></a></li>
 		
-			<li><a href="/tags/Nginx/">Nginx<span>1</span></a></li>
-		
-			<li><a href="/tags/essay/">essay<span>1</span></a></li>
+			<li><a href="/tags/注入/">注入<span>1</span></a></li>
 		
 			<li><a href="/tags/Imagetragick/">Imagetragick<span>2</span></a></li>
+		
+			<li><a href="/tags/Curl/">Curl<span>1</span></a></li>
 		
 		 
 		</ul>
@@ -379,8 +417,12 @@ var _hmt = _hmt || [];
 		
 			
 <div class="widget">
-  <h4>Posts recentes</h4>
+  <h4>Recent Posts</h4>
   <ul class="entry list-unstyled">
+    
+      <li>
+        <a href="/2017/10/10/PHP序列化以及反序列化系列1-PHP序列化格式/" ><i class="fa fa-file-o"></i>PHP序列化以及反序列化系列1--PHP序列化格式</a>
+      </li>
     
       <li>
         <a href="/2017/10/10/zval-refcount/" ><i class="fa fa-file-o"></i>Zval中的refcount问题</a>
@@ -396,10 +438,6 @@ var _hmt = _hmt || [];
     
       <li>
         <a href="/2017/10/10/CodeIgniter-Vul/" ><i class="fa fa-file-o"></i>CodeIgniter伪随机数导致加密失效</a>
-      </li>
-    
-      <li>
-        <a href="/2017/10/10/BR大逃杀/" ><i class="fa fa-file-o"></i>网页游戏《BR大逃杀》一枚小0Day</a>
       </li>
     
   </ul>
