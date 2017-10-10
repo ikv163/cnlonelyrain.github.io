@@ -17,7 +17,7 @@
 <p>域树（Tree）</p>
 <p>域林（Forest）</p>
 <h3 id="1-什么是活动目录？"><a href="#1-什么是活动目录？" class="headerlink" title="1.什么是活动目录？"></a>1.什么是活动目录？</h3><p>活动目录是Windows Server在网络环境中提供的“资源目录”。活动目录是储存着域中相关资源信息的目录，例如计算机，用户组，数据库，服务器，打印机，用户属性（权限等），就像一个数据库。</p>
-<p><img src="/2017/10/10/域安全/2229391424.png]" alt="DA67951C-17D7-45D1-907B-504CBE265682.png"></p>
+<p><img src="/2017/10/10/域安全/2229391424.png" alt="DA67951C-17D7-45D1-907B-504CBE265682.png"></p>
 <p>图【1】：</p>
 <h3 id="2-什么是活动目录目录服务？"><a href="#2-什么是活动目录目录服务？" class="headerlink" title="2.什么是活动目录目录服务？"></a>2.什么是活动目录目录服务？</h3><p>“The Active Directory directory service is a distributed database that stores and manages information about network resources, as well as application-specific data from directory-enabled applications. Active Directory allows administrators to organize objects of a network (such as users, computers, and devices) into a hierarchical collection of containers known as the logical structure. The top-level logical container in this hierarchy is the forest. Within a forest are domain containers, and within domains are organizational units.”</p>
 <p>首先大家都知道目录，目录提供了文档内容的概览，可以使我们迅速找到一本书，字典中特定的章节。那么将这个概念应用于网络管理员管理服务器中。假设一个公司中有一千台服务器，管理员想要找到特定的服务器的话,一台一台的登陆，显然是极其低效率的方法。所以目录的理念同样适用在解决这种情况。</p>
