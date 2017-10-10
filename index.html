@@ -131,7 +131,7 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
-			<a href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/" >Nginx-HTTP-Parse-Vulnerability</a>
+			<a href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/" >Nginx-HTTP-Parse 文件解析漏洞</a>
 		</h3>
 		</div>
 	<div class="col-md-4">
@@ -145,9 +145,11 @@ var _hmt = _hmt || [];
   <div class="row">
 	
 	
-		<p>CVE-2013-4547是Nginx出现过的一个解析漏洞，</p>
+		<p>##补丁分析</p>
+<p>CVE-2013-4547是Nginx出现过的一个解析漏洞，</p>
 <p>官方的补丁打在了_ngx_http<em>parse.c</em>上</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">--- src/http/ngx_http_parse.c</div><div class="line">+++ src/http/ngx_http_parse.c</div><div class="line">@@ <span class="number">-617</span>,<span class="number">6</span> +<span class="number">617</span>,<span class="number">7</span> @@ ngx_http_parse_request_line(ngx_http_req</div><div class="line"><span class="keyword">default</span>:</div><div class="line">r-&gt;space_in_uri = <span class="number">1</span>;</div><div class="line">state = sw_check_uri;</div><div class="line">+                p--;</div><div class="line"><span class="keyword">break</span>;</div><div class="line">&#125;</div><div class="line"><span class="keyword">break</span>;</div><div class="line">@@ <span class="number">-670</span>,<span class="number">6</span> +<span class="number">671</span>,<span class="number">7</span> @@ ngx_http_parse_request_line(ngx_http_req</div><div class="line"><span class="keyword">default</span>:</div><div class="line">r-&gt;space_in_uri = <span class="number">1</span>;</div><div class="line">state = sw_uri;</div><div class="line">+                p--;</div><div class="line"><span class="keyword">break</span>;</div><div class="line">&#125;</div><div class="line"><span class="keyword">break</span>;</div></pre></td></tr></table></figure>
+<p>##断点调试</p>
 <p>使用gdb调试nginx，将断点下在<code>/nginx-1.5.6/src/http/ngx_http_parse.c</code>的<code>ngx_http_parse_request_line</code>上，</p>
 <p>发送了测试payload</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">GET /a.jpg /0.php HTTP/1.1</div><div class="line">Host: 127.0.0.1</div><div class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</div><div class="line">Upgrade-Insecure-Requests: 1</div><div class="line">User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36</div><div class="line">Accept-Encoding: gzip, deflate, sdch</div><div class="line">Accept-Language: zh-CN,zh;q=0.8,en;q=0.6</div></pre></td></tr></table></figure>
@@ -268,12 +270,12 @@ var _hmt = _hmt || [];
 <p>​<br>​    接着使用了一个for循环来控制指针的移动，ch为当前指针指向的字符。r-&gt;state的值为0<br>​<br>​    ，所以第一次进入状态机进入了sw_start，如果第一个字符是CR（回车）或者LF（换行）就break，接下去再把指针p向后移动直到碰到非LF和CR，再进入下一个判断语句<br>​<br>​    <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">​    <span class="keyword">if</span> ((ch &lt; <span class="string">'A'</span> || ch &gt; <span class="string">'Z'</span>) &amp;&amp; ch != <span class="string">'_'</span>) &#123;</div><div class="line">​    <span class="keyword">return</span> NGX_HTTP_PARSE_INVALID_METHOD;</div><div class="line">​    &#125;</div><div class="line">​</div></pre></td></tr></table></figure></p>
 <p>​<br>​    遇到A-Z和_之外的字符都返回一个解析错误。通过了这两项检查，会向后移动直到遇到一个空格，会进入method的判断，开发人员先判断了遇到的第一个空格之前字符的数量，根据数量再进入相应的case中去判断是什么method然后再将r-&gt;method设置为相应的method。<br>​<br>​    完成了以上对HTTP method的判断之后，进入了第二个判断sw_spaces_before_uri，<br>​<br>​    <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">​    <span class="keyword">switch</span> (ch) &#123;</div><div class="line">​    <span class="keyword">case</span> <span class="string">' '</span>:</div><div class="line">​    <span class="keyword">break</span>;</div><div class="line">​    <span class="keyword">default</span>:</div><div class="line">​    <span class="keyword">return</span> NGX_HTTP_PARSE_INVALID_REQUEST;</div><div class="line">​    &#125;</div><div class="line">​</div></pre></td></tr></table></figure></p>
 <p>​<br>​    这一段我们可以看出，只要遇到空格（space）指针就会就会往后移动，直到遇到’/‘或者遇到字符A-Z。<br>​<br>​    <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">​    c = (u_char) (ch | <span class="number">0x20</span>);</div><div class="line">​    <span class="keyword">if</span> (c &gt;= <span class="string">'a'</span> &amp;&amp; c &lt;= <span class="string">'z'</span>) &#123;</div><div class="line">​    r-&gt;schema_start = p;</div><div class="line">​    state = sw_schema;</div><div class="line">​    <span class="keyword">break</span>;</div><div class="line">​    &#125;</div><div class="line">​</div></pre></td></tr></table></figure></p>
-<p>​<br>​    代码就是判断是否是sw_host_start，不是sw_host_start就判别为uri的开始，如果在<code>:</code>后碰到两个<code>/</code>并且如果<code>[</code>就进行ipv6的判断。<br>​<br>​    文字看起来没有图像直观，以下是解析的流程图<img src="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/1509484404.png" alt="nginx_http0.png"><br>​<br>​    在sw_uri之后放置空格，case会进入sw_check_uri_http_09，这时候uri_ext和uri_end之间的值为Nginx判断的后缀，即如果让nginx解析的是以下的连接<br>​<br>​    <code>http://www.lonelyrain.me/1.jpg[空格][零零]1.php</code><br>​<br>​    那么nginx会判定为<code>jpg</code>，到了case <code>sw_check_uri_http_09</code>中，遇到/00并不会进行处理,会使用default条件<br>​<br>​    ![nginx_http_1.png][/2972208958.png]<br>​<br>​    <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">​    <span class="keyword">default</span>:</div><div class="line">​    r-&gt;space_in_uri = <span class="number">1</span>;</div><div class="line">​    state = sw_check_uri;</div><div class="line">​    <span class="keyword">break</span>;</div><div class="line">​</div></pre></td></tr></table></figure></p>
-<p>​<br>​    ![nginx_gdb_1.png][1509484404.png]<br>​<br>​    成功的没有让nginx对/00进行处理。<br>​<br>​    而后面.php成功的将<code>uri_ext</code>覆盖为了<code>php</code>，之后 nginx 就会将请求发送给 <code>fastcgi</code> 去解析，<code>fastcgi</code>查找文件会被00阻断［这里代码找不到，留个坑］，于是漏洞就形成了。<br>​<br>​    ![nginx_burp.png][/2565879554.png]<br>​    注意点就是jpg文件上传的时候必须带一个空格，触发的时候空格后面加一个00跟上.php就能触发了［security.limit_extensions没有限制的情况下］<br>​<br>​    Reference:<br>​<br>​    <a href="http://tengine.taobao.org/book/" target="_blank" rel="external">taobao,(2013)._nginx开发从入门到精通</a><br>​<br>​    <a href="http://blog.csdn.net/liujiyong7/article/details/44833475" target="_blank" rel="external">囧囧有神,(2015)._nginx源码分析之http解码实现</a></p>
+<p>​<br>​    代码就是判断是否是sw_host_start，不是sw_host_start就判别为uri的开始，如果在<code>:</code>后碰到两个<code>/</code>并且如果<code>[</code>就进行ipv6的判断。<br>​<br>​    文字看起来没有图像直观，以下是解析的流程图<img src="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/1509484404.png" alt="nginx_http0.png"><br>​<br>​    在sw_uri之后放置空格，case会进入sw_check_uri_http_09，这时候uri_ext和uri_end之间的值为Nginx判断的后缀，即如果让nginx解析的是以下的连接<br>​<br>​    <code>http://www.lonelyrain.me/1.jpg[空格][零零]1.php</code><br>​<br>​    那么nginx会判定为<code>jpg</code>，到了case <code>sw_check_uri_http_09</code>中，遇到/00并不会进行处理,会使用default条件<br>​<br>​    <img src="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/2972208958.png" alt="nginx_http_1.png"><br>​<br>​    <figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">​    <span class="keyword">default</span>:</div><div class="line">​    r-&gt;space_in_uri = <span class="number">1</span>;</div><div class="line">​    state = sw_check_uri;</div><div class="line">​    <span class="keyword">break</span>;</div><div class="line">​</div></pre></td></tr></table></figure></p>
+<p>​<br>​    <img src="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/1509484404.png" alt="nginx_gdb_1.png"><br>​<br>​    成功的没有让nginx对/00进行处理。<br>​<br>​    而后面.php成功的将<code>uri_ext</code>覆盖为了<code>php</code>，之后 nginx 就会将请求发送给 <code>fastcgi</code> 去解析，<code>fastcgi</code>查找文件会被00阻断［这里代码找不到，留个坑］，于是漏洞就形成了。<br>​<br>​    <img src="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/2565879554.png" alt="nginx_burp.png"><br>​<br>​    注意点就是jpg文件上传的时候必须带一个空格，触发的时候空格后面加一个00跟上.php就能触发了［security.limit_extensions没有限制的情况下］<br>​<br>​    Reference:<br>​<br>​    <a href="http://tengine.taobao.org/book/" target="_blank" rel="external">taobao,(2013)._nginx开发从入门到精通</a><br>​<br>​    <a href="http://blog.csdn.net/liujiyong7/article/details/44833475" target="_blank" rel="external">囧囧有神,(2015)._nginx源码分析之http解码实现</a></p>
 
 	
 	</div>
-  <a type="button" href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -302,7 +304,7 @@ var _hmt = _hmt || [];
 
 	
 	</div>
-  <a type="button" href="/2017/10/10/新博客-新旅程/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/新博客-新旅程/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -331,7 +333,7 @@ var _hmt = _hmt || [];
 			
   <div id="site_search">
    <div class="form-group">
-    <input type="text" id="local-search-input" name="q" results="0" placeholder="Search" class="st-search-input st-default-search-input form-control"/>
+    <input type="text" id="local-search-input" name="q" results="0" placeholder="Busca" class="st-search-input st-default-search-input form-control"/>
    </div>  
   <div id="local-search-result"></div>
   </div>
@@ -340,7 +342,7 @@ var _hmt = _hmt || [];
 		
 			
 	<div class="widget">
-		<h4>Categories</h4>
+		<h4>Categorias</h4>
 		<ul class="tag_box inline list-unstyled">
 		
 			<li><a href="/categories/essay/">essay<span>1</span></a></li>
@@ -364,11 +366,11 @@ var _hmt = _hmt || [];
 		
 			
 <div class="widget">
-  <h4>Recent Posts</h4>
+  <h4>Posts recentes</h4>
   <ul class="entry list-unstyled">
     
       <li>
-        <a href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/" ><i class="fa fa-file-o"></i>Nginx-HTTP-Parse-Vulnerabil...</a>
+        <a href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/" ><i class="fa fa-file-o"></i>Nginx-HTTP-Parse 文件解析漏洞</a>
       </li>
     
       <li>
