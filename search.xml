@@ -134,6 +134,22 @@
 <p>​<br>​    <img src="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/1509484404.png" alt="nginx_gdb_1.png"><br>​<br>​    成功的没有让nginx对/00进行处理。<br>​<br>​    而后面.php成功的将<code>uri_ext</code>覆盖为了<code>php</code>，之后 nginx 就会将请求发送给 <code>fastcgi</code> 去解析，<code>fastcgi</code>查找文件会被00阻断［这里代码找不到，留个坑］，于是漏洞就形成了。<br>​<br>​    <img src="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/2565879554.png" alt="nginx_burp.png"><br>​<br>​    注意点就是jpg文件上传的时候必须带一个空格，触发的时候空格后面加一个00跟上.php就能触发了［security.limit_extensions没有限制的情况下］<br>​<br>​    Reference:<br>​<br>​    <a href="http://tengine.taobao.org/book/" target="_blank" rel="external">taobao,(2013)._nginx开发从入门到精通</a><br>​<br>​    <a href="http://blog.csdn.net/liujiyong7/article/details/44833475" target="_blank" rel="external">囧囧有神,(2015)._nginx源码分析之http解码实现</a></p>
 ]]></content>
       
+        <categories>
+            
+            <category> 漏洞分析 </category>
+            
+        </categories>
+        
+        
+        <tags>
+            
+            <tag> 漏洞分析 </tag>
+            
+            <tag> Nginx </tag>
+            
+            <tag> 解析漏洞 </tag>
+            
+        </tags>
         
     </entry>
     
