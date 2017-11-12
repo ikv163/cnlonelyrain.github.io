@@ -3,24 +3,44 @@
   
     
     <entry>
-      <title><![CDATA[objective-c 逆向基础]]></title>
-      <url>/2017/10/10/objective-c-reverse-basic/</url>
-      <content type="html"><![CDATA[<h2 id="Objective-C-基础"><a href="#Objective-C-基础" class="headerlink" title="Objective-C 基础"></a>Objective-C 基础</h2>]]></content>
+      <title><![CDATA[网易云音乐逆向分析[1]]]></title>
+      <url>/2017/10/19/netease-security-analysis/</url>
+      <content type="html"><![CDATA[<h2 id="1-文件结构"><a href="#1-文件结构" class="headerlink" title="1. 文件结构"></a>1. 文件结构</h2><p>由于我当前系统环境为Macos X，所以观察网易云音乐在<code>.app</code>包中的文件结构。</p>
+<p><img src="/2017/10/19/netease-security-analysis/2ED7A085-F481-45DA-972D-6BF32BF98E07.png" alt="0"></p>
+<p>可以看到Netease.app文件较少，结构比较简单。</p>
+<p>Frameworks文件夹中有引入的三个framework。<br>MacOS文件夹中为程序APP。<br>Resources文件夹中为一些程序加载的资源文件。</p>
+<h2 id="2-界面分析"><a href="#2-界面分析" class="headerlink" title="2. 界面分析"></a>2. 界面分析</h2><ol>
+<li>首先使用Interface Inspector进行软件界面的分析</li>
+</ol>
+<p><img src="/2017/10/19/netease-security-analysis/438F1561-1DAC-4AC2-99D2-8A4649DFB428.png" alt="1"></p>
+<p>最顶端第一层为NSMenu及其Item，对应的是网易云音乐程序顶部的菜单栏。</p>
+<p><img src="/2017/10/19/netease-security-analysis/2C714B9C-E4CE-4FBA-99E4-8BDDFDD71503.png" alt="2"></p>
+<p>剩余的<code>YYYMainWindowController</code>与<code>YYYMiniPlayerWindowsController</code>分别用来呈现</p>
+<p>网易云音乐主界面与网易云音乐迷你播放器</p>
+<p><img src="/2017/10/19/netease-security-analysis/07311904-AE21-44C4-A966-B0C2C616E14B.png" alt="图3"></p>
+<p><img src="/2017/10/19/netease-security-analysis/2C058DF8-FC07-468F-AB5E-C9B99F98AECF.png" alt="图4"></p>
+<p>观察其NSThemeFrame的子类，有<code>InMovableByBackgrounContainerView</code>和<code>INAppStoreWindowContentView</code>这两个类。</p>
+<p>由这两个特殊的类名，可以知道网易云音乐使用了github上一款基于BSD协议的<img src="https://github.com/indragiek/INAppStoreWindow" alt="INAppStoreWindow">进行了二次开发。</p>
+<p>经过界面分析，可以知道网易云音乐这个APP在Macos下其实就是重写了INAppStoreWindow类，制作了菜单栏等程序控件。而主界面使用了Webkit，<code>YYYRedirectWebView</code>中WebFrameView用来渲染html的内容。</p>
+<p>同时代理Netease Music的进程，观察器发送的HTTP流量，可以看到AppleWebkit的User-Agent。</p>
+<p><img src="/2017/10/19/netease-security-analysis/FAF0E57E-1705-45EB-83F5-62B4026F5128.png" alt="5"></p>
+<h2 id="3-Bin文件分析"><a href="#3-Bin文件分析" class="headerlink" title="3. Bin文件分析"></a>3. Bin文件分析</h2><p>用IDA分析<code>/Applications/NeteaseMusic.app/Contents/MacOS/NeteaseMusic</code>。上一步我们进行了软件界面的分析，知道了其实网易云音乐就是使用Webkit来呈现大部分用户界面，那么网易云基于Webkit势必就会使用使用Webkit的API来扩展本身的功能</p>
+]]></content>
       
         <categories>
             
-            <category> MacOS逆向 </category>
+            <category> PHP </category>
             
         </categories>
         
         
         <tags>
             
-            <tag> objective-c </tag>
+            <tag> 软件分析 </tag>
             
-            <tag> MacOS </tag>
+            <tag> Macos X </tag>
             
-            <tag> 逆向 </tag>
+            <tag> Reverse Engineering </tag>
             
         </tags>
         
@@ -539,10 +559,9 @@ https://msdn.microsoft.com/en-us/library/windows/desktop/aa363858(v=vs.85).aspx<
     <entry>
       <title><![CDATA[Curl类库解析url安全简读]]></title>
       <url>/2017/10/10/Curl%E7%B1%BB%E5%BA%93%E8%A7%A3%E6%9E%90url%E5%AE%89%E5%85%A8%E7%AE%80%E8%AF%BB/</url>
-      <content type="html"><![CDATA[<p>##简介</p>
-<p>###什么是CURL<br>curl是利用URL语法在命令行方式下工作的开源文件传输工具。它被广泛应用在Unix、多种Linux发行版中，并且有DOS和Win32、Win64下的移植版本。</p>
+      <content type="html"><![CDATA[<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><h3 id="什么是CURL"><a href="#什么是CURL" class="headerlink" title="什么是CURL"></a>什么是CURL</h3><p>curl是利用URL语法在命令行方式下工作的开源文件传输工具。它被广泛应用在Unix、多种Linux发行版中，并且有DOS和Win32、Win64下的移植版本。</p>
 <a id="more"></a>
-<p>###正文<br>CURL是十分强大的开源命令行工具,支持以下这些协议</p>
+<h3 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h3><p>CURL是十分强大的开源命令行工具,支持以下这些协议</p>
 <blockquote>
 <p>DICT, FILE, FTP, FTPS, Gopher, HTTP, HTTPS, IMAP, IMAPS, LDAP, LDAPS, POP3, POP3S, RTMP, RTSP, SCP, SFTP, SMB, SMTP, SMTPS, Telnet and TFTP.</p>
 </blockquote>
