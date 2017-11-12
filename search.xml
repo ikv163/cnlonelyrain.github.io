@@ -3,50 +3,6 @@
   
     
     <entry>
-      <title><![CDATA[网易云音乐逆向分析[1]]]></title>
-      <url>/2017/10/19/netease-security-analysis/</url>
-      <content type="html"><![CDATA[<h2 id="1-文件结构"><a href="#1-文件结构" class="headerlink" title="1. 文件结构"></a>1. 文件结构</h2><p>由于我当前系统环境为Macos X，所以观察网易云音乐在<code>.app</code>包中的文件结构。</p>
-<p><img src="/2017/10/19/netease-security-analysis/2ED7A085-F481-45DA-972D-6BF32BF98E07.png" alt="0"></p>
-<p>可以看到Netease.app文件较少，结构比较简单。</p>
-<p>Frameworks文件夹中有引入的三个framework。<br>MacOS文件夹中为程序APP。<br>Resources文件夹中为一些程序加载的资源文件。</p>
-<h2 id="2-界面分析"><a href="#2-界面分析" class="headerlink" title="2. 界面分析"></a>2. 界面分析</h2><ol>
-<li>首先使用Interface Inspector进行软件界面的分析</li>
-</ol>
-<p><img src="/2017/10/19/netease-security-analysis/438F1561-1DAC-4AC2-99D2-8A4649DFB428.png" alt="1"></p>
-<p>最顶端第一层为NSMenu及其Item，对应的是网易云音乐程序顶部的菜单栏。</p>
-<p><img src="/2017/10/19/netease-security-analysis/2C714B9C-E4CE-4FBA-99E4-8BDDFDD71503.png" alt="2"></p>
-<p>剩余的<code>YYYMainWindowController</code>与<code>YYYMiniPlayerWindowsController</code>分别用来呈现</p>
-<p>网易云音乐主界面与网易云音乐迷你播放器</p>
-<p><img src="/2017/10/19/netease-security-analysis/07311904-AE21-44C4-A966-B0C2C616E14B.png" alt="图3"></p>
-<p><img src="/2017/10/19/netease-security-analysis/2C058DF8-FC07-468F-AB5E-C9B99F98AECF.png" alt="图4"></p>
-<p>观察其NSThemeFrame的子类，有<code>InMovableByBackgrounContainerView</code>和<code>INAppStoreWindowContentView</code>这两个类。</p>
-<p>由这两个特殊的类名，可以知道网易云音乐使用了github上一款基于BSD协议的<img src="https://github.com/indragiek/INAppStoreWindow" alt="INAppStoreWindow">进行了二次开发。</p>
-<p>经过界面分析，可以知道网易云音乐这个APP在Macos下其实就是重写了INAppStoreWindow类，制作了菜单栏等程序控件。而主界面使用了Webkit，<code>YYYRedirectWebView</code>中WebFrameView用来渲染html的内容。</p>
-<p>同时代理Netease Music的进程，观察器发送的HTTP流量，可以看到AppleWebkit的User-Agent。</p>
-<p><img src="/2017/10/19/netease-security-analysis/FAF0E57E-1705-45EB-83F5-62B4026F5128.png" alt="5"></p>
-<h2 id="3-Bin文件分析"><a href="#3-Bin文件分析" class="headerlink" title="3. Bin文件分析"></a>3. Bin文件分析</h2><p>用IDA分析<code>/Applications/NeteaseMusic.app/Contents/MacOS/NeteaseMusic</code>。上一步我们进行了软件界面的分析，知道了其实网易云音乐就是使用Webkit来呈现大部分用户界面，那么网易云基于Webkit势必就会使用使用Webkit的API来扩展本身的功能</p>
-]]></content>
-      
-        <categories>
-            
-            <category> PHP </category>
-            
-        </categories>
-        
-        
-        <tags>
-            
-            <tag> 软件分析 </tag>
-            
-            <tag> Macos X </tag>
-            
-            <tag> Reverse Engineering </tag>
-            
-        </tags>
-        
-    </entry>
-    
-    <entry>
       <title><![CDATA[活动目录以及域安全]]></title>
       <url>/2017/10/10/%E5%9F%9F%E5%AE%89%E5%85%A8/</url>
       <content type="html"><![CDATA[<p>知己知彼，百战不殆-孙子</p>

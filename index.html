@@ -132,53 +132,6 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
-			<a href="/2017/10/19/netease-security-analysis/" >网易云音乐逆向分析[1]</a>
-		</h3>
-		</div>
-	<div class="col-md-4">
-		<div class="date">post @ 2017-10-19  </div>
-		</div>
-	</div>
-	
-
-
-			<div class="entry">
-  <div class="row">
-	
-	
-		<h2 id="1-文件结构"><a href="#1-文件结构" class="headerlink" title="1. 文件结构"></a>1. 文件结构</h2><p>由于我当前系统环境为Macos X，所以观察网易云音乐在<code>.app</code>包中的文件结构。</p>
-<p><img src="/2017/10/19/netease-security-analysis/2ED7A085-F481-45DA-972D-6BF32BF98E07.png" alt="0"></p>
-<p>可以看到Netease.app文件较少，结构比较简单。</p>
-<p>Frameworks文件夹中有引入的三个framework。<br>MacOS文件夹中为程序APP。<br>Resources文件夹中为一些程序加载的资源文件。</p>
-<h2 id="2-界面分析"><a href="#2-界面分析" class="headerlink" title="2. 界面分析"></a>2. 界面分析</h2><ol>
-<li>首先使用Interface Inspector进行软件界面的分析</li>
-</ol>
-<p><img src="/2017/10/19/netease-security-analysis/438F1561-1DAC-4AC2-99D2-8A4649DFB428.png" alt="1"></p>
-<p>最顶端第一层为NSMenu及其Item，对应的是网易云音乐程序顶部的菜单栏。</p>
-<p><img src="/2017/10/19/netease-security-analysis/2C714B9C-E4CE-4FBA-99E4-8BDDFDD71503.png" alt="2"></p>
-<p>剩余的<code>YYYMainWindowController</code>与<code>YYYMiniPlayerWindowsController</code>分别用来呈现</p>
-<p>网易云音乐主界面与网易云音乐迷你播放器</p>
-<p><img src="/2017/10/19/netease-security-analysis/07311904-AE21-44C4-A966-B0C2C616E14B.png" alt="图3"></p>
-<p><img src="/2017/10/19/netease-security-analysis/2C058DF8-FC07-468F-AB5E-C9B99F98AECF.png" alt="图4"></p>
-<p>观察其NSThemeFrame的子类，有<code>InMovableByBackgrounContainerView</code>和<code>INAppStoreWindowContentView</code>这两个类。</p>
-<p>由这两个特殊的类名，可以知道网易云音乐使用了github上一款基于BSD协议的<img src="https://github.com/indragiek/INAppStoreWindow" alt="INAppStoreWindow">进行了二次开发。</p>
-<p>经过界面分析，可以知道网易云音乐这个APP在Macos下其实就是重写了INAppStoreWindow类，制作了菜单栏等程序控件。而主界面使用了Webkit，<code>YYYRedirectWebView</code>中WebFrameView用来渲染html的内容。</p>
-<p>同时代理Netease Music的进程，观察器发送的HTTP流量，可以看到AppleWebkit的User-Agent。</p>
-<p><img src="/2017/10/19/netease-security-analysis/FAF0E57E-1705-45EB-83F5-62B4026F5128.png" alt="5"></p>
-<h2 id="3-Bin文件分析"><a href="#3-Bin文件分析" class="headerlink" title="3. Bin文件分析"></a>3. Bin文件分析</h2><p>用IDA分析<code>/Applications/NeteaseMusic.app/Contents/MacOS/NeteaseMusic</code>。上一步我们进行了软件界面的分析，知道了其实网易云音乐就是使用Webkit来呈现大部分用户界面，那么网易云基于Webkit势必就会使用使用Webkit的API来扩展本身的功能</p>
-
-	
-	</div>
-  <a type="button" href="/2017/10/19/netease-security-analysis/#more" class="btn btn-default more">Read More</a>
-</div>
-
-		
-			
-	
-	<!-- display as entry -->
-<div class="row">
-	<div class="col-md-8">
-		<h3 class="title">
 			<a href="/2017/10/10/域安全/" >活动目录以及域安全</a>
 		</h3>
 		</div>
@@ -197,7 +150,7 @@ var _hmt = _hmt || [];
 <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>一直以来在网上域渗透的资料，几乎专注的都是一些命令，以及一些工具的使用，但是缺乏对活动目录以及与域本身的安全的研究思考。</p>
 	
 	</div>
-  <a type="button" href="/2017/10/10/域安全/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/域安全/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -226,7 +179,7 @@ var _hmt = _hmt || [];
 <p>其次，在用过其他人开发的类似软件，例如*斧/*剑。感觉其功能性并未达到自己的需求，所以干脆自己写一个来用吧！</p>
 	
 	</div>
-  <a type="button" href="/2017/10/10/raindrop/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/raindrop/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -258,7 +211,7 @@ var _hmt = _hmt || [];
 <p>这是为什么呢，我探究了一下背后的原理</p>
 	
 	</div>
-  <a type="button" href="/2017/10/10/Windows-DNS/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/Windows-DNS/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -286,7 +239,7 @@ var _hmt = _hmt || [];
 <figure class="highlight php"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">if</span>($action==<span class="string">"login"</span>)&#123;</div><div class="line">$metinfo_admin_name     = $login_name;</div><div class="line">$metinfo_admin_pass     = $login_pass;</div><div class="line">$metinfo_admin_pass=md5($metinfo_admin_pass);</div><div class="line"><span class="comment">/*code*/</span></div><div class="line"><span class="keyword">if</span>($met_login_code==<span class="number">1</span>)&#123;</div><div class="line"><span class="keyword">require_once</span> $depth.<span class="string">'../include/captcha.class.php'</span>;</div><div class="line">$Captcha= <span class="keyword">new</span>  Captcha();</div><div class="line"><span class="keyword">if</span>(!$Captcha-&gt;CheckCode($code))&#123;</div><div class="line"><span class="keyword">echo</span>(<span class="string">"&lt;script type='text/javascript'&gt;alert('$lang_logincodeerror');location.href='login.php?langset=$langset';&lt;/script&gt;"</span>);</div><div class="line"><span class="keyword">exit</span>;</div><div class="line">&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 	
 	</div>
-  <a type="button" href="/2017/10/10/metinfo-include/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/metinfo-include/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -314,7 +267,7 @@ var _hmt = _hmt || [];
 <p>反序列化：对单一的已序列化的变量进行操作，将其转换回 PHP 的值（zval）。</p>
 	
 	</div>
-  <a type="button" href="/2017/10/10/PHP序列化以及反序列化系列1-PHP序列化格式/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/PHP序列化以及反序列化系列1-PHP序列化格式/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -341,7 +294,7 @@ var _hmt = _hmt || [];
 		<p>今天群里面的一位小伙伴问我关于PHP变量中refcount的问题，当时回答给他了，发现自己没注意到一个细节，记录下来。</p>
 	
 	</div>
-  <a type="button" href="/2017/10/10/zval-refcount/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/zval-refcount/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -369,7 +322,7 @@ var _hmt = _hmt || [];
 <p>这两个可以在主文件之前自动解析。<br>那么就可以通过增加这两个值实现在其他文件夹放入我们的后门文件，并且在网站的任何一个目录用这个后门.</p>
 	
 	</div>
-  <a type="button" href="/2017/10/10/PHP自动文件扩展安全研究/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/PHP自动文件扩展安全研究/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -397,7 +350,7 @@ var _hmt = _hmt || [];
 <p>下面是Payload</p>
 	
 	</div>
-  <a type="button" href="/2017/10/10/FineCMS2-0-1后台GETSHELL/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/FineCMS2-0-1后台GETSHELL/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -427,7 +380,34 @@ var _hmt = _hmt || [];
 <p><code>$config[&#39;sess_use_database&#39;]    = true;</code></p>
 	
 	</div>
-  <a type="button" href="/2017/10/10/CodeIgniter-Vul/#more" class="btn btn-default more">Read More</a>
+  <a type="button" href="/2017/10/10/CodeIgniter-Vul/#more" class="btn btn-default more">Leia Mais</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
+			<a href="/2017/10/10/BR大逃杀/" >网页游戏《BR大逃杀》一枚小0Day</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2017-10-10  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<p>呵呵，昨晚和初中同学叙旧，两个人无聊找了一款网页游戏BR大逃杀玩，今天把这个网页游戏下下来简单审计了一下源码。</p>
+	
+	</div>
+  <a type="button" href="/2017/10/10/BR大逃杀/#more" class="btn btn-default more">Leia Mais</a>
 </div>
 
 		
@@ -441,12 +421,12 @@ var _hmt = _hmt || [];
 
    
     
-           <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>Prev</a>
+           <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>Anterior</a>
         
 
         <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
  
-       <a href="/page/2/" type="button" class="btn btn-default ">Next<i class="fa fa-arrow-circle-o-right"></i></a>     
+       <a href="/page/2/" type="button" class="btn btn-default ">Próximo<i class="fa fa-arrow-circle-o-right"></i></a>     
         
 
   
@@ -465,10 +445,10 @@ var _hmt = _hmt || [];
 	
 			
 	<div class="widget">
-		<h4>Categories</h4>
+		<h4>Categorias</h4>
 		<ul class="tag_box inline list-unstyled">
 		
-			<li><a href="/categories/PHP/">PHP<span>4</span></a></li>
+			<li><a href="/categories/PHP/">PHP<span>3</span></a></li>
 		
 			<li><a href="/categories/essay/">essay<span>1</span></a></li>
 		
@@ -489,48 +469,48 @@ var _hmt = _hmt || [];
 		<h4>Tag Cloud</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/WordPress/">WordPress<span>4</span></a></li>
-		
-			<li><a href="/tags/SQL注入/">SQL注入<span>1</span></a></li>
-		
-			<li><a href="/tags/漏洞分析/">漏洞分析<span>11</span></a></li>
-		
 			<li><a href="/tags/代码注入/">代码注入<span>4</span></a></li>
-		
-			<li><a href="/tags/域控/">域控<span>1</span></a></li>
-		
-			<li><a href="/tags/文件包含/">文件包含<span>1</span></a></li>
-		
-			<li><a href="/tags/Windows/">Windows<span>1</span></a></li>
-		
-			<li><a href="/tags/注入/">注入<span>1</span></a></li>
-		
-			<li><a href="/tags/解析漏洞/">解析漏洞<span>1</span></a></li>
-		
-			<li><a href="/tags/Webshell管理/">Webshell管理<span>1</span></a></li>
-		
-			<li><a href="/tags/Imagetragick/">Imagetragick<span>2</span></a></li>
-		
-			<li><a href="/tags/Macos-X/">Macos X<span>1</span></a></li>
-		
-			<li><a href="/tags/参数污染/">参数污染<span>1</span></a></li>
-		
-			<li><a href="/tags/essay/">essay<span>1</span></a></li>
-		
-			<li><a href="/tags/DNS/">DNS<span>1</span></a></li>
-		
-			<li><a href="/tags/命令执行/">命令执行<span>3</span></a></li>
-		
-			<li><a href="/tags/伪随机数/">伪随机数<span>2</span></a></li>
 		
 			<li><a href="/tags/域安全/">域安全<span>1</span></a></li>
 		
+			<li><a href="/tags/域控/">域控<span>1</span></a></li>
+		
+			<li><a href="/tags/WordPress/">WordPress<span>4</span></a></li>
+		
+			<li><a href="/tags/Curl/">Curl<span>1</span></a></li>
+		
+			<li><a href="/tags/Webshell管理/">Webshell管理<span>1</span></a></li>
+		
+			<li><a href="/tags/CodeIgniter/">CodeIgniter<span>2</span></a></li>
+		
+			<li><a href="/tags/文件包含/">文件包含<span>1</span></a></li>
+		
+			<li><a href="/tags/注入/">注入<span>1</span></a></li>
+		
+			<li><a href="/tags/漏洞分析/">漏洞分析<span>11</span></a></li>
+		
+			<li><a href="/tags/Windows/">Windows<span>1</span></a></li>
+		
+			<li><a href="/tags/伪随机数/">伪随机数<span>2</span></a></li>
+		
+			<li><a href="/tags/DNS/">DNS<span>1</span></a></li>
+		
+			<li><a href="/tags/解析漏洞/">解析漏洞<span>1</span></a></li>
+		
 			<li><a href="/tags/Backdoor/">Backdoor<span>1</span></a></li>
 		
-			<li><a href="/tags/软件分析/">软件分析<span>1</span></a></li>
+			<li><a href="/tags/essay/">essay<span>1</span></a></li>
+		
+			<li><a href="/tags/命令执行/">命令执行<span>3</span></a></li>
+		
+			<li><a href="/tags/Imagetragick/">Imagetragick<span>2</span></a></li>
+		
+			<li><a href="/tags/SQL注入/">SQL注入<span>1</span></a></li>
+		
+			<li><a href="/tags/Nginx/">Nginx<span>1</span></a></li>
 		
 		
-		   <li><a href="/tags">...<span>26</span></a></li>
+		   <li><a href="/tags">...<span>23</span></a></li>
 		 
 		</ul>
 	</div>
@@ -539,12 +519,8 @@ var _hmt = _hmt || [];
 		
 			
 <div class="widget">
-  <h4>Recent Posts</h4>
+  <h4>Posts recentes</h4>
   <ul class="entry list-unstyled">
-    
-      <li>
-        <a href="/2017/10/19/netease-security-analysis/" ><i class="fa fa-file-o"></i>网易云音乐逆向分析[1]</a>
-      </li>
     
       <li>
         <a href="/2017/10/10/域安全/" ><i class="fa fa-file-o"></i>活动目录以及域安全</a>
@@ -560,6 +536,10 @@ var _hmt = _hmt || [];
     
       <li>
         <a href="/2017/10/10/metinfo-include/" ><i class="fa fa-file-o"></i>Metinfo5.3.10 CMS最新版命令执行|文件...</a>
+      </li>
+    
+      <li>
+        <a href="/2017/10/10/PHP序列化以及反序列化系列1-PHP序列化格式/" ><i class="fa fa-file-o"></i>PHP序列化以及反序列化系列1--PHP序列化格式</a>
       </li>
     
   </ul>
