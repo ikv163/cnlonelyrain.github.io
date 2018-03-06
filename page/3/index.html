@@ -132,6 +132,35 @@ var _hmt = _hmt || [];
 <div class="row">
 	<div class="col-md-8">
 		<h3 class="title">
+			<a href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/" >Nginx-HTTP-Parse 文件解析漏洞</a>
+		</h3>
+		</div>
+	<div class="col-md-4">
+		<div class="date">post @ 2017-10-10  </div>
+		</div>
+	</div>
+	
+
+
+			<div class="entry">
+  <div class="row">
+	
+	
+		<h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><p>CVE-2013-4547是Nginx出现过的一个解析漏洞，</p>
+<p>官方的补丁打在了_ngx_http<em>parse.c</em>上</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">--- src/http/ngx_http_parse.c</div><div class="line">+++ src/http/ngx_http_parse.c</div><div class="line">@@ <span class="number">-617</span>,<span class="number">6</span> +<span class="number">617</span>,<span class="number">7</span> @@ ngx_http_parse_request_line(ngx_http_req</div><div class="line"><span class="keyword">default</span>:</div><div class="line">r-&gt;space_in_uri = <span class="number">1</span>;</div><div class="line">state = sw_check_uri;</div><div class="line">+                p--;</div><div class="line"><span class="keyword">break</span>;</div><div class="line">&#125;</div><div class="line"><span class="keyword">break</span>;</div><div class="line">@@ <span class="number">-670</span>,<span class="number">6</span> +<span class="number">671</span>,<span class="number">7</span> @@ ngx_http_parse_request_line(ngx_http_req</div><div class="line"><span class="keyword">default</span>:</div><div class="line">r-&gt;space_in_uri = <span class="number">1</span>;</div><div class="line">state = sw_uri;</div><div class="line">+                p--;</div><div class="line"><span class="keyword">break</span>;</div><div class="line">&#125;</div><div class="line"><span class="keyword">break</span>;</div></pre></td></tr></table></figure>
+	
+	</div>
+  <a type="button" href="/2017/10/10/Nginx-HTTP-Parse-Vulnerability/#more" class="btn btn-default more">Read More</a>
+</div>
+
+		
+			
+	
+	<!-- display as entry -->
+<div class="row">
+	<div class="col-md-8">
+		<h3 class="title">
 			<a href="/2017/10/10/新博客-新旅程/" >新博客,新旅程</a>
 		</h3>
 		</div>
@@ -192,7 +221,7 @@ var _hmt = _hmt || [];
 		<h4>Categories</h4>
 		<ul class="tag_box inline list-unstyled">
 		
-			<li><a href="/categories/PHP/">PHP<span>4</span></a></li>
+			<li><a href="/categories/PHP/">PHP<span>3</span></a></li>
 		
 			<li><a href="/categories/essay/">essay<span>1</span></a></li>
 		
@@ -202,7 +231,7 @@ var _hmt = _hmt || [];
 		
 			<li><a href="/categories/源码分析/">源码分析<span>3</span></a></li>
 		
-			<li><a href="/categories/漏洞分析/">漏洞分析<span>11</span></a></li>
+			<li><a href="/categories/漏洞分析/">漏洞分析<span>13</span></a></li>
 		
 		</ul>
 	</div>
@@ -213,45 +242,45 @@ var _hmt = _hmt || [];
 		<h4>Tag Cloud</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/源码分析/">源码分析<span>1</span></a></li>
-		
 			<li><a href="/tags/SQL注入/">SQL注入<span>1</span></a></li>
-		
-			<li><a href="/tags/域安全/">域安全<span>1</span></a></li>
-		
-			<li><a href="/tags/CodeIgniter/">CodeIgniter<span>2</span></a></li>
-		
-			<li><a href="/tags/伪随机数/">伪随机数<span>2</span></a></li>
-		
-			<li><a href="/tags/DNS/">DNS<span>1</span></a></li>
-		
-			<li><a href="/tags/漏洞分析/">漏洞分析<span>11</span></a></li>
-		
-			<li><a href="/tags/参数污染/">参数污染<span>1</span></a></li>
-		
-			<li><a href="/tags/Webshell管理/">Webshell管理<span>1</span></a></li>
-		
-			<li><a href="/tags/域控/">域控<span>1</span></a></li>
-		
-			<li><a href="/tags/文件包含/">文件包含<span>1</span></a></li>
-		
-			<li><a href="/tags/Curl/">Curl<span>1</span></a></li>
-		
-			<li><a href="/tags/PHP/">PHP<span>11</span></a></li>
-		
-			<li><a href="/tags/代码注入/">代码注入<span>4</span></a></li>
-		
-			<li><a href="/tags/命令执行/">命令执行<span>3</span></a></li>
-		
-			<li><a href="/tags/WordPress/">WordPress<span>4</span></a></li>
-		
-			<li><a href="/tags/注入/">注入<span>1</span></a></li>
-		
-			<li><a href="/tags/Imagetragick/">Imagetragick<span>2</span></a></li>
 		
 			<li><a href="/tags/Windows/">Windows<span>1</span></a></li>
 		
+			<li><a href="/tags/解析漏洞/">解析漏洞<span>1</span></a></li>
+		
+			<li><a href="/tags/漏洞分析/">漏洞分析<span>12</span></a></li>
+		
+			<li><a href="/tags/二进制/">二进制<span>1</span></a></li>
+		
+			<li><a href="/tags/代码注入/">代码注入<span>4</span></a></li>
+		
+			<li><a href="/tags/Webshell管理/">Webshell管理<span>1</span></a></li>
+		
+			<li><a href="/tags/注入/">注入<span>1</span></a></li>
+		
+			<li><a href="/tags/源码分析/">源码分析<span>1</span></a></li>
+		
 			<li><a href="/tags/Nginx/">Nginx<span>1</span></a></li>
+		
+			<li><a href="/tags/域安全/">域安全<span>1</span></a></li>
+		
+			<li><a href="/tags/文件包含/">文件包含<span>1</span></a></li>
+		
+			<li><a href="/tags/essay/">essay<span>1</span></a></li>
+		
+			<li><a href="/tags/Backdoor/">Backdoor<span>1</span></a></li>
+		
+			<li><a href="/tags/域控/">域控<span>1</span></a></li>
+		
+			<li><a href="/tags/命令执行/">命令执行<span>3</span></a></li>
+		
+			<li><a href="/tags/Imagetragick/">Imagetragick<span>2</span></a></li>
+		
+			<li><a href="/tags/伪随机数/">伪随机数<span>2</span></a></li>
+		
+			<li><a href="/tags/WordPress/">WordPress<span>4</span></a></li>
+		
+			<li><a href="/tags/参数污染/">参数污染<span>1</span></a></li>
 		
 		
 		   <li><a href="/tags">...<span>26</span></a></li>
@@ -267,7 +296,11 @@ var _hmt = _hmt || [];
   <ul class="entry list-unstyled">
     
       <li>
-        <a href="/2017/10/19/netease-security-analysis/" ><i class="fa fa-file-o"></i>网易云音乐逆向分析[1]</a>
+        <a href="/2018/03/07/CVE-2018-1058/" ><i class="fa fa-file-o"></i>设计缺陷CVE-2018-1058 漏洞分析</a>
+      </li>
+    
+      <li>
+        <a href="/2017/12/05/寄存器及其相关/" ><i class="fa fa-file-o"></i>Some thing about buffer ove...</a>
       </li>
     
       <li>
@@ -280,10 +313,6 @@ var _hmt = _hmt || [];
     
       <li>
         <a href="/2017/10/10/Windows-DNS/" ><i class="fa fa-file-o"></i>Windows/*nix下DNS传出注入数据的背后</a>
-      </li>
-    
-      <li>
-        <a href="/2017/10/10/metinfo-include/" ><i class="fa fa-file-o"></i>Metinfo5.3.10 CMS最新版命令执行|文件...</a>
       </li>
     
   </ul>
@@ -315,7 +344,7 @@ var _hmt = _hmt || [];
   </div>
   <div class="container-narrow">
   <footer> <p>
-  &copy; 2017 LonelyRain
+  &copy; 2018 LonelyRain
   
 </p>
  </footer>
