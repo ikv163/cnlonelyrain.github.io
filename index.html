@@ -173,35 +173,7 @@ var _hmt = _hmt || [];
   <div class="row">
 	
 	
-		<h2 id="X86-64-Register"><a href="#X86-64-Register" class="headerlink" title="X86-64 Register"></a>X86-64 Register</h2><h3 id="Simple-Demo-1"><a href="#Simple-Demo-1" class="headerlink" title="Simple Demo 1"></a>Simple Demo 1</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">char</span> *str)</span></span>&#123;</div><div class="line">	<span class="keyword">char</span>    buffer[<span class="number">256</span>];</div><div class="line">	<span class="keyword">int</span>     i;</div><div class="line">	</div><div class="line">	i = <span class="number">0</span>;</div><div class="line">	<span class="keyword">while</span>(*str) buffer[i++] = *str++;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> ac, <span class="keyword">char</span> **av)</span></span></div><div class="line"><span class="function"></span>&#123;</div><div class="line">        <span class="keyword">char</span>    *fstring = <span class="string">"First string"</span>;</div><div class="line">        <span class="keyword">char</span>    *sstring = <span class="string">"Second string"</span>;</div><div class="line"></div><div class="line">        <span class="keyword">if</span>(ac &gt;= <span class="number">2</span>)</div><div class="line">        func(av[<span class="number">1</span>]);</div><div class="line">        <span class="built_in">printf</span>(<span class="string">"%s =&gt; %s\n"</span>,fstring,sstring);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<h3 id="GDB-Disassemble-Output"><a href="#GDB-Disassemble-Output" class="headerlink" title="GDB Disassemble Output"></a>GDB Disassemble Output</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">Dump of assembler code for function main:</div><div class="line">   0x0000000100000f00 &lt;+0&gt;:	push   %rbp</div><div class="line">   0x0000000100000f01 &lt;+1&gt;:	mov    %rsp,%rbp</div><div class="line">   0x0000000100000f04 &lt;+4&gt;:	sub    $0x30,%rsp</div><div class="line">   0x0000000100000f08 &lt;+8&gt;:	lea    0x88(%rip),%rax        # 0x100000f97</div><div class="line">   0x0000000100000f0f &lt;+15&gt;:	lea    0x74(%rip),%rcx        # 0x100000f8a</div><div class="line">   0x0000000100000f16 &lt;+22&gt;:	movl   $0x0,-0x4(%rbp)</div><div class="line">   0x0000000100000f1d &lt;+29&gt;:	mov    %edi,-0x8(%rbp)</div><div class="line">   0x0000000100000f20 &lt;+32&gt;:	mov    %rsi,-0x10(%rbp)</div><div class="line">   0x0000000100000f24 &lt;+36&gt;:	mov    %rcx,-0x18(%rbp)</div><div class="line">   0x0000000100000f28 &lt;+40&gt;:	mov    %rax,-0x20(%rbp)</div><div class="line">   0x0000000100000f2c &lt;+44&gt;:	cmpl   $0x2,-0x8(%rbp)</div><div class="line">   0x0000000100000f30 &lt;+48&gt;:	jl     0x100000f43 &lt;main+67&gt;</div><div class="line">   0x0000000100000f36 &lt;+54&gt;:	mov    -0x10(%rbp),%rax</div><div class="line">   0x0000000100000f3a &lt;+58&gt;:	mov    0x8(%rax),%rdi</div><div class="line">   0x0000000100000f3e &lt;+62&gt;:	callq  0x100000ea0 &lt;func&gt;</div><div class="line">   0x0000000100000f43 &lt;+67&gt;:	lea    0x5b(%rip),%rdi        # 0x100000fa5</div><div class="line">   0x0000000100000f4a &lt;+74&gt;:	mov    -0x18(%rbp),%rsi</div><div class="line">   0x0000000100000f4e &lt;+78&gt;:	mov    -0x20(%rbp),%rdx</div><div class="line">   0x0000000100000f52 &lt;+82&gt;:	mov    $0x0,%al</div><div class="line">   0x0000000100000f54 &lt;+84&gt;:	callq  0x100000f68</div><div class="line">   0x0000000100000f59 &lt;+89&gt;:	mov    -0x4(%rbp),%ecx</div><div class="line">   0x0000000100000f5c &lt;+92&gt;:	mov    %eax,-0x24(%rbp)</div><div class="line">   0x0000000100000f5f &lt;+95&gt;:	mov    %ecx,%eax</div><div class="line">   0x0000000100000f61 &lt;+97&gt;:	add    $0x30,%rsp</div><div class="line">   0x0000000100000f65 &lt;+101&gt;:	pop    %rbp</div><div class="line">   0x0000000100000f66 &lt;+102&gt;:	retq</div><div class="line">End of assembler dump.</div></pre></td></tr></table></figure>
-<p>注意到</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">0x0000000100000f1d &lt;+29&gt;:    mov    %edi,-0x8(%rbp)</div><div class="line">0x0000000100000f20 &lt;+32&gt;:    mov    %rsi,-0x10(%rbp)</div><div class="line">0x0000000100000f24 &lt;+36&gt;:    mov    %rcx,-0x18(%rbp)</div><div class="line">0x0000000100000f28 &lt;+40&gt;:    mov    %rax,-0x20(%rbp)</div></pre></td></tr></table></figure>
-<p>使用了<code>%edi,%rsi,%rcx,%rax</code>，查阅手册</p>
-<p><img src="/2017/12/05/寄存器及其相关/1512489308066.jpg" alt="register.png"></p>
-<h3 id="Simple-Demo2"><a href="#Simple-Demo2" class="headerlink" title="Simple Demo2"></a>Simple Demo2</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span>* argv[])</span> </span>&#123;</div><div class="line">        <span class="comment">/* [1] */</span> <span class="keyword">char</span> buf[<span class="number">256</span>];</div><div class="line">        <span class="comment">/* [2] */</span> <span class="built_in">strcpy</span>(buf,argv[<span class="number">1</span>]);</div><div class="line">        <span class="comment">/* [3] */</span> <span class="built_in">printf</span>(<span class="string">"Input:%s\n"</span>,buf);</div><div class="line">        <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>如果在MacOS系统想要进行Buffer Overflow的测试的话，如果使用GCC编译需要用这两个<code>-fno-stack-protector -D_FORTIFY_SOURCE=0</code>选项。</p>
-<blockquote>
-<p>GCC堆栈保护</p>
-<blockquote>
-<p>-fstack-protector：</p>
-<blockquote>
-<p>启用堆栈保护，不过只为局部变量中含有 char 数组的函数插入保护代码。</p>
-</blockquote>
-<p>-fstack-protector-all：</p>
-<blockquote>
-<p>启用堆栈保护，为所有函数插入保护代码。</p>
-</blockquote>
-<p>-fno-stack-protector：</p>
-<blockquote>
-<p>禁用堆栈保护。</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<p>stack-protector保护方式修改函数栈的组织，在缓冲区和可控数据buffer间插入一个canary word(标志)。当缓冲区被溢出时，canary word 会首先被覆盖。通过检查 canary word 的值是否被修改，就可以判断是否发生了溢出。</p>
-<p>汇编代码中<code>mov %edi,-0x8(%rbp)</code>这样的为AT&amp;T的语法。<br>Intel 语法的间接内存引用的格式为:<br>section:[base+index*scale+displacement]<br>而在 AT&amp;T 语法中对应的形式为:<br>section:displacement(base,index,scale)</p>
-<p><code>mov %edi,-0x8(%rbp)</code> =<code>(%rbp + 0*0 - 0x8)</code></p>
-
+		<h2 id="X86-64-Register"><a href="#X86-64-Register" class="headerlink" title="X86-64 Register"></a>X86-64 Register</h2><h3 id="Simple-Demo-1"><a href="#Simple-Demo-1" class="headerlink" title="Simple Demo 1"></a>Simple Demo 1</h3>
 	
 	</div>
   <a type="button" href="/2017/12/05/寄存器及其相关/#more" class="btn btn-default more">Read More</a>
@@ -494,45 +466,45 @@ var _hmt = _hmt || [];
 		<h4>Tag Cloud</h4>
 		<ul class="tag_box inline list-unstyled">		
 		
-			<li><a href="/tags/Python/">Python<span>0</span></a></li>
-		
-			<li><a href="/tags/Bypass/">Bypass<span>0</span></a></li>
-		
-			<li><a href="/tags/Backdoor/">Backdoor<span>1</span></a></li>
-		
-			<li><a href="/tags/参数污染/">参数污染<span>1</span></a></li>
-		
-			<li><a href="/tags/二进制/">二进制<span>1</span></a></li>
-		
-			<li><a href="/tags/解析漏洞/">解析漏洞<span>1</span></a></li>
-		
-			<li><a href="/tags/Webshell管理/">Webshell管理<span>1</span></a></li>
-		
-			<li><a href="/tags/Imagetragick/">Imagetragick<span>2</span></a></li>
-		
-			<li><a href="/tags/域控/">域控<span>1</span></a></li>
-		
-			<li><a href="/tags/代码注入/">代码注入<span>4</span></a></li>
-		
-			<li><a href="/tags/文件包含/">文件包含<span>1</span></a></li>
-		
-			<li><a href="/tags/沙盒/">沙盒<span>0</span></a></li>
-		
-			<li><a href="/tags/Nginx/">Nginx<span>1</span></a></li>
-		
-			<li><a href="/tags/essay/">essay<span>1</span></a></li>
-		
-			<li><a href="/tags/命令执行/">命令执行<span>3</span></a></li>
-		
-			<li><a href="/tags/Postgresql/">Postgresql<span>1</span></a></li>
-		
-			<li><a href="/tags/域安全/">域安全<span>1</span></a></li>
-		
 			<li><a href="/tags/DNS/">DNS<span>1</span></a></li>
 		
 			<li><a href="/tags/PHP/">PHP<span>11</span></a></li>
 		
-			<li><a href="/tags/漏洞分析/">漏洞分析<span>12</span></a></li>
+			<li><a href="/tags/Windows/">Windows<span>1</span></a></li>
+		
+			<li><a href="/tags/二进制/">二进制<span>1</span></a></li>
+		
+			<li><a href="/tags/WordPress/">WordPress<span>4</span></a></li>
+		
+			<li><a href="/tags/Postgresql/">Postgresql<span>1</span></a></li>
+		
+			<li><a href="/tags/沙盒/">沙盒<span>0</span></a></li>
+		
+			<li><a href="/tags/文件包含/">文件包含<span>1</span></a></li>
+		
+			<li><a href="/tags/命令执行/">命令执行<span>3</span></a></li>
+		
+			<li><a href="/tags/essay/">essay<span>1</span></a></li>
+		
+			<li><a href="/tags/设计缺陷/">设计缺陷<span>1</span></a></li>
+		
+			<li><a href="/tags/域安全/">域安全<span>1</span></a></li>
+		
+			<li><a href="/tags/参数污染/">参数污染<span>1</span></a></li>
+		
+			<li><a href="/tags/SQL注入/">SQL注入<span>1</span></a></li>
+		
+			<li><a href="/tags/CodeIgniter/">CodeIgniter<span>2</span></a></li>
+		
+			<li><a href="/tags/解析漏洞/">解析漏洞<span>1</span></a></li>
+		
+			<li><a href="/tags/Bypass/">Bypass<span>0</span></a></li>
+		
+			<li><a href="/tags/注入/">注入<span>1</span></a></li>
+		
+			<li><a href="/tags/域控/">域控<span>1</span></a></li>
+		
+			<li><a href="/tags/代码注入/">代码注入<span>4</span></a></li>
 		
 		
 		   <li><a href="/tags">...<span>29</span></a></li>
