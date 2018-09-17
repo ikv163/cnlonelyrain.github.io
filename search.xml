@@ -3,31 +3,6 @@
   
     
     <entry>
-      <title><![CDATA[Python Sand Box 的制作与Bypass]]></title>
-      <url>/2018/05/04/bypass-python-sandbox-md/</url>
-      <content type="html"><![CDATA[<p>最近做公司项目的时候，遇到了某功能模块可以执行Python代码，简单测试后发现开发人员在设计的时候也考虑过安全方面的因素，对其中的一些敏感的模块、内置函数进行了限制。笔者通过一些方法对该沙盒成功进行了Bypass，由于第一次在生产环境中遇到该问题，本文也希望来讨论一下如何制作一个安全的沙盒和Bypass的相关技巧。</p>
-]]></content>
-      
-        <categories>
-            
-            <category> 安全研究 </category>
-            
-        </categories>
-        
-        
-        <tags>
-            
-            <tag> Python </tag>
-            
-            <tag> 沙盒 </tag>
-            
-            <tag> Bypass </tag>
-            
-        </tags>
-        
-    </entry>
-    
-    <entry>
       <title><![CDATA[Postgresql 设计缺陷CVE-2018-1058 漏洞分析]]></title>
       <url>/2018/03/07/CVE-2018-1058/</url>
       <content type="html"><![CDATA[<h1 id="Postgresql-设计缺陷CVE-2018-1058-漏洞分析"><a href="#Postgresql-设计缺陷CVE-2018-1058-漏洞分析" class="headerlink" title="Postgresql 设计缺陷CVE-2018-1058 漏洞分析"></a>Postgresql 设计缺陷CVE-2018-1058 漏洞分析</h1><h2 id="漏洞描述"><a href="#漏洞描述" class="headerlink" title="漏洞描述"></a>漏洞描述</h2><p>2018年3月1日，PostgreSQL全球开发团队发布了多个系列版本的PostgreSQL安全升级。此次升级修复了CVE-2018-1058，该漏洞可以攻击者“劫持”PostgreSQL数据库的函数，从而使高权限用户在不知情的情况下，执行攻击者设定的恶意SQL语句。</p>
