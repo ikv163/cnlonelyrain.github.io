@@ -185,7 +185,7 @@ var _hmt = _hmt || [];
 <p>对于第1点限制，有一个未经验证的想法。是否能组合CVE-2018-1271在Windows环境下对目录外的文件进行读取呢？但是由于手头边Windows环境还没有搭建好，可能需要过段时间才能进行测试:p</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/resources/%5c%5c..%5c/..%5c/..%5c/..%5c/..%5c/..%5c/..%5c/..%5c/..%5c/windows/win.ini</div></pre></td></tr></table></figure>
 <h3 id="5-Exploit"><a href="#5-Exploit" class="headerlink" title="5. Exploit!"></a>5. Exploit!</h3><p><img src="/2018/09/18/spring-view-injection/expolit.jpeg" alt="读取成功"></p>
-<h3 id="Reference-List"><a href="#Reference-List" class="headerlink" title="Reference List"></a>Reference List</h3><p><a href="https://o2platform.files.wordpress.com/2011/07/ounce_springframework_vulnerabilities.pdf" target="_blank" rel="external">https://o2platform.files.wordpress.com/2011/07/ounce_springframework_vulnerabilities.pdf</a><br><a href="https://danielmiessler.com/study/mvc/" target="_blank" rel="external">https://danielmiessler.com/study/mvc/</a></p>
+<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p><a href="https://o2platform.files.wordpress.com/2011/07/ounce_springframework_vulnerabilities.pdf" target="_blank" rel="external">https://o2platform.files.wordpress.com/2011/07/ounce_springframework_vulnerabilities.pdf</a><br><a href="https://danielmiessler.com/study/mvc/" target="_blank" rel="external">https://danielmiessler.com/study/mvc/</a></p>
 	  
 	</div>
 
@@ -195,12 +195,12 @@ var _hmt = _hmt || [];
 
     
     
-    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>Anterior</a>
+    <a type="button" class="btn btn-default disabled"><i class="fa fa-arrow-circle-o-left"></i>Prev</a>
     
 
     <a href="/" type="button" class="btn btn-default"><i class="fa fa-home"></i>Home</a>
     
-    <a href="/2018/03/07/CVE-2018-1058/" type="button" class="btn btn-default ">Próximo<i
+    <a href="/2018/03/07/CVE-2018-1058/" type="button" class="btn btn-default ">Next<i
                 class="fa fa-arrow-circle-o-right"></i></a>
     
 
@@ -213,7 +213,7 @@ var _hmt = _hmt || [];
 	<!-- comment -->
 	
 <section id="comment">
-    <h2 class="title">Comentários</h2>
+    <h2 class="title">Comments</h2>
 
     
 </section>
@@ -264,7 +264,7 @@ var _hmt = _hmt || [];
 	   <a data-toggle="collapse" data-target="#toc"><i class="fa fa-bars"></i></a>
 	   <div id="toc" class="toc collapse in">
 		   <span class="toc-title">Contents</span>
-			<ol class="toc-article"><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#背景"><span class="toc-article-text">背景</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#1-Spring-MVC-的报错页面"><span class="toc-article-text">1. Spring MVC 的报错页面</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#2-Debug回溯"><span class="toc-article-text">2. Debug回溯</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#3-危害"><span class="toc-article-text">3. 危害</span></a><ol class="toc-article-child"><li class="toc-article-item toc-article-level-5"><a class="toc-article-link" href="#1-权限认证Bypass-成功"><span class="toc-article-text">(1) 权限认证Bypass [成功]</span></a></li><li class="toc-article-item toc-article-level-5"><a class="toc-article-link" href="#2-文件读取-成功"><span class="toc-article-text">(2) 文件读取 [成功]</span></a></li><li class="toc-article-item toc-article-level-5"><a class="toc-article-link" href="#3-HTTP-Header-Injection-失败"><span class="toc-article-text">(3) HTTP Header Injection [失败]</span></a></li></ol></li></ol></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#4-限制"><span class="toc-article-text">4. 限制</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#5-Exploit"><span class="toc-article-text">5. Exploit!</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#Reference-List"><span class="toc-article-text">Reference List</span></a></li></ol>
+			<ol class="toc-article"><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#背景"><span class="toc-article-text">背景</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#1-Spring-MVC-的报错页面"><span class="toc-article-text">1. Spring MVC 的报错页面</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#2-Debug回溯"><span class="toc-article-text">2. Debug回溯</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#3-危害"><span class="toc-article-text">3. 危害</span></a><ol class="toc-article-child"><li class="toc-article-item toc-article-level-5"><a class="toc-article-link" href="#1-权限认证Bypass-成功"><span class="toc-article-text">(1) 权限认证Bypass [成功]</span></a></li><li class="toc-article-item toc-article-level-5"><a class="toc-article-link" href="#2-文件读取-成功"><span class="toc-article-text">(2) 文件读取 [成功]</span></a></li><li class="toc-article-item toc-article-level-5"><a class="toc-article-link" href="#3-HTTP-Header-Injection-失败"><span class="toc-article-text">(3) HTTP Header Injection [失败]</span></a></li></ol></li></ol></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#4-限制"><span class="toc-article-text">4. 限制</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#5-Exploit"><span class="toc-article-text">5. Exploit!</span></a></li><li class="toc-article-item toc-article-level-3"><a class="toc-article-link" href="#References"><span class="toc-article-text">References</span></a></li></ol>
 		</div>
 	
 	</div>

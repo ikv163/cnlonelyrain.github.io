@@ -61,7 +61,7 @@
 <p>对于第1点限制，有一个未经验证的想法。是否能组合CVE-2018-1271在Windows环境下对目录外的文件进行读取呢？但是由于手头边Windows环境还没有搭建好，可能需要过段时间才能进行测试:p</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/resources/%5c%5c..%5c/..%5c/..%5c/..%5c/..%5c/..%5c/..%5c/..%5c/..%5c/windows/win.ini</div></pre></td></tr></table></figure>
 <h3 id="5-Exploit"><a href="#5-Exploit" class="headerlink" title="5. Exploit!"></a>5. Exploit!</h3><p><img src="/2018/09/18/spring-view-injection/expolit.jpeg" alt="读取成功"></p>
-<h3 id="Reference-List"><a href="#Reference-List" class="headerlink" title="Reference List"></a>Reference List</h3><p><a href="https://o2platform.files.wordpress.com/2011/07/ounce_springframework_vulnerabilities.pdf" target="_blank" rel="external">https://o2platform.files.wordpress.com/2011/07/ounce_springframework_vulnerabilities.pdf</a><br><a href="https://danielmiessler.com/study/mvc/" target="_blank" rel="external">https://danielmiessler.com/study/mvc/</a></p>
+<h3 id="References"><a href="#References" class="headerlink" title="References"></a>References</h3><p><a href="https://o2platform.files.wordpress.com/2011/07/ounce_springframework_vulnerabilities.pdf" target="_blank" rel="external">https://o2platform.files.wordpress.com/2011/07/ounce_springframework_vulnerabilities.pdf</a><br><a href="https://danielmiessler.com/study/mvc/" target="_blank" rel="external">https://danielmiessler.com/study/mvc/</a></p>
 ]]></content>
       
         <categories>
